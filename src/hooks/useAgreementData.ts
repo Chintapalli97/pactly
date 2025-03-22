@@ -1,7 +1,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { Agreement } from '@/types/agreement';
-import { getStoredAgreements, getAgreementById as getAgreementByIdUtil } from '@/utils/agreementUtils';
+import { getStoredAgreements, getAgreementById as getAgreementByIdUtil } from '@/utils/agreementStorage';
 import { toast } from '@/lib/toast';
 
 export const useAgreementData = (userId: string | undefined, isAdmin: boolean = false) => {

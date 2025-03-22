@@ -1,11 +1,10 @@
-
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { CheckCircle, XCircle, Trash2, Link, Shield } from 'lucide-react';
 import { toast } from '@/lib/toast';
 import { AgreementStatus } from '@/types/agreement';
-import { verifyAgreementExists } from '@/utils/agreementUtils';
+import { verifyAgreementExists } from '@/utils/agreementStorage';
 
 interface AgreementActionsProps {
   id: string;
