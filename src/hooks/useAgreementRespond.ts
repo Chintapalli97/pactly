@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from '@/lib/toast';
-import { Agreement } from '@/types/agreement';
+import { Agreement, AgreementStatus } from '@/types/agreement';
 import { 
   saveAgreements, 
   simulateApiDelay,
@@ -55,11 +55,14 @@ export const useAgreementRespond = (
           // Notify the creator of the response
           addNotificationForUser(agreement.creatorId);
           
+          // Ensure the status is properly typed as AgreementStatus
+          const newStatus: AgreementStatus = accept ? 'accepted' : 'declined';
+          
           return {
             ...agreement,
             recipientId: user.id,
             recipientName: user.name,
-            status: accept ? 'accepted' : 'declined'
+            status: newStatus
           };
         }
         return agreement;
