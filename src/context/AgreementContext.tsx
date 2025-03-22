@@ -1,7 +1,6 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useAuth } from './AuthContext';
-import { toast } from '@/components/ui/sonner';
+import { toast } from '@/lib/toast';
 
 export type AgreementStatus = 'pending' | 'accepted' | 'declined';
 
@@ -41,22 +40,18 @@ export const AgreementProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const [loading, setLoading] = useState(true);
   const [hasNewNotifications, setHasNewNotifications] = useState(false);
 
-  // Filter agreements for current user
   const sentAgreements = agreements.filter(a => a.creatorId === user?.id);
   const receivedAgreements = agreements.filter(a => a.recipientId === user?.id);
 
   useEffect(() => {
-    // Initialize agreements array in localStorage if it doesn't exist
     if (!localStorage.getItem(AGREEMENTS_STORAGE_KEY)) {
       localStorage.setItem(AGREEMENTS_STORAGE_KEY, JSON.stringify([]));
     }
     
-    // Load agreements
     const storedAgreements = JSON.parse(localStorage.getItem(AGREEMENTS_STORAGE_KEY) || '[]');
     setAgreements(storedAgreements);
     setLoading(false);
     
-    // Check for notifications
     if (user) {
       const notifications = JSON.parse(localStorage.getItem(NOTIFICATIONS_KEY) || '{}');
       setHasNewNotifications(!!notifications[user.id]);
@@ -73,7 +68,6 @@ export const AgreementProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     
     setLoading(true);
     try {
-      // Simulate API call delay
       await new Promise(resolve => setTimeout(resolve, 500));
       
       const newAgreement: Agreement = {
@@ -104,12 +98,10 @@ export const AgreementProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     
     setLoading(true);
     try {
-      // Simulate API call delay
       await new Promise(resolve => setTimeout(resolve, 500));
       
       const updatedAgreements = agreements.map(agreement => {
         if (agreement.id === id) {
-          // Set notification for creator
           const notifications = JSON.parse(localStorage.getItem(NOTIFICATIONS_KEY) || '{}');
           notifications[agreement.creatorId] = true;
           localStorage.setItem(NOTIFICATIONS_KEY, JSON.stringify(notifications));
@@ -139,7 +131,6 @@ export const AgreementProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     
     setLoading(true);
     try {
-      // Simulate API call delay
       await new Promise(resolve => setTimeout(resolve, 500));
       
       let updatedAgreements = [...agreements];
@@ -151,16 +142,13 @@ export const AgreementProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       
       const agreement = updatedAgreements[agreementIndex];
       
-      // Check if agreement can be deleted
       if (agreement.status !== 'accepted') {
         throw new Error('Only accepted agreements can be deleted');
       }
       
-      // Add user to delete requesters if not already there
       if (!agreement.deleteRequestedBy.includes(user.id)) {
         agreement.deleteRequestedBy.push(user.id);
         
-        // If both users requested delete, remove the agreement
         if (agreement.deleteRequestedBy.length === 2) {
           updatedAgreements = updatedAgreements.filter(a => a.id !== id);
           toast.success('Agreement deleted!');

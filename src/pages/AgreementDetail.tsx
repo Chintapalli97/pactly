@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import Layout from '@/components/Layout';
 import StatusBadge from '@/components/StatusBadge';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
-import { toast } from '@/components/ui/sonner';
+import { toast } from '@/lib/toast';
 import { formatDistanceToNow, format } from 'date-fns';
 import { Loader2, ArrowLeft, CheckCircle, XCircle, Trash2, Share2 } from 'lucide-react';
 

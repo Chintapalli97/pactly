@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAgreements } from '@/context/AgreementContext';
@@ -6,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import Layout from '@/components/Layout';
-import { Share2, PencilIcon, PaperPlaneIcon, ArrowLeft } from 'lucide-react';
+import { Share2, PencilIcon, Send, ArrowLeft } from 'lucide-react';
 
 const CreateAgreement = () => {
   const [message, setMessage] = useState('');
@@ -87,7 +86,7 @@ const CreateAgreement = () => {
                 className="w-full" 
                 disabled={isSubmitting || !message.trim()}
               >
-                <PaperPlaneIcon className="h-4 w-4 mr-2" />
+                <Send className="h-4 w-4 mr-2" />
                 {isSubmitting ? 'Creating...' : 'Create Agreement'}
               </Button>
             </form>
