@@ -8,7 +8,10 @@ import { Textarea } from '@/components/ui/textarea';
 import Layout from '@/components/Layout';
 import { Link, PencilIcon, Send, ArrowLeft } from 'lucide-react';
 import { toast } from '@/lib/toast';
-import { getAgreementById as getAgreementByIdUtil, ensureAgreementInStorage } from '@/utils/agreementUtils';
+import { 
+  getAgreementById as getAgreementByIdUtil, 
+  ensureAgreementInStorage 
+} from '@/utils/agreementStorage';
 
 const CreateAgreement = () => {
   const [message, setMessage] = useState('');
