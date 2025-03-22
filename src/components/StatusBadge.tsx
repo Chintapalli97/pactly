@@ -2,7 +2,7 @@
 import React from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Clock, CheckCircle, XCircle } from 'lucide-react';
-import { AgreementStatus } from '@/context/AgreementContext';
+import { AgreementStatus } from '@/types/agreement';
 import { cn } from '@/lib/utils';
 
 interface StatusBadgeProps {
