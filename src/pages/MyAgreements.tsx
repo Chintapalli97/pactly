@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { useAgreements } from '@/context/AgreementContext';
+import { useAgreements } from '@/hooks/useAgreementsContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import AgreementCard from '@/components/AgreementCard';
 import Layout from '@/components/Layout';

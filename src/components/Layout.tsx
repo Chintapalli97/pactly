@@ -2,7 +2,7 @@
 import React, { useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
-import { useAgreements } from '@/context/AgreementContext';
+import { useAgreements } from '@/hooks/useAgreementsContext';
 import { Button } from './ui/button';
 import { Bell, LogOut, UserCircle, PlusCircle, Home, FileText } from 'lucide-react';
 import { cn } from '@/lib/utils';

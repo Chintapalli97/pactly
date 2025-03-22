@@ -1,7 +1,7 @@
 
 import React, { useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { useAgreements } from '@/context/AgreementContext';
+import { useAgreements } from '@/hooks/useAgreementsContext';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import AgreementCard from '@/components/AgreementCard';

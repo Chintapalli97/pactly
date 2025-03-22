@@ -1,7 +1,7 @@
 
 import React, { useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useAgreements } from '@/context/AgreementContext';
+import { useAgreements } from '@/hooks/useAgreementsContext';
 import Layout from '@/components/Layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';

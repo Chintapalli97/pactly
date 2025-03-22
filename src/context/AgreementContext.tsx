@@ -63,5 +63,3 @@ export const AgreementProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     </AgreementContext.Provider>
   );
 };
-
-// Removed the circular import
