@@ -16,7 +16,7 @@ const ShareLinkButton: React.FC<ShareLinkButtonProps> = ({ id }) => {
       if (verifyAgreementExists(id)) {
         const url = `${window.location.origin}/agreements/${id}`;
         navigator.clipboard.writeText(url);
-        toast.success('Link copied to clipboard');
+        toast.success('Link copied to clipboard!');
       } else {
         toast.error('Cannot copy link: Agreement not found');
       }
@@ -30,6 +30,7 @@ const ShareLinkButton: React.FC<ShareLinkButtonProps> = ({ id }) => {
     <Button
       variant="outline"
       onClick={copyShareLink}
+      className="flex items-center"
     >
       <Link className="h-4 w-4 mr-1" />
       Copy Link

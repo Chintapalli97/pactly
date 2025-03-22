@@ -31,27 +31,29 @@ const AgreementActions: React.FC<AgreementActionsProps> = ({
   isAdmin = false,
 }) => {
   return (
-    <div className="border-t bg-muted/30 flex flex-wrap gap-3 justify-between p-6 pt-4">
-      <div className="flex gap-2">
-        {canRespond && (
-          <ResponseButtons
-            isResponding={isResponding}
-            onResponse={onResponse}
-          />
-        )}
+    <div className="border-t bg-muted/30 p-6 pt-4">
+      <div className="flex flex-wrap gap-3 justify-between">
+        <div className="flex gap-2">
+          {canRespond && (
+            <ResponseButtons
+              isResponding={isResponding}
+              onResponse={onResponse}
+            />
+          )}
+          
+          {status === 'pending' && isCreator && (
+            <ShareLinkButton id={id} />
+          )}
+        </div>
         
-        {status === 'pending' && isCreator && (
-          <ShareLinkButton id={id} />
-        )}
-      </div>
-      
-      <div className="flex flex-col items-end gap-2">
-        <DeleteButtons
-          isAdmin={isAdmin}
-          canDelete={canDelete}
-          hasRequestedDelete={hasRequestedDelete}
-          onRequestDelete={onRequestDelete}
-        />
+        <div>
+          <DeleteButtons
+            isAdmin={isAdmin}
+            canDelete={canDelete}
+            hasRequestedDelete={hasRequestedDelete}
+            onRequestDelete={onRequestDelete}
+          />
+        </div>
       </div>
     </div>
   );

@@ -13,7 +13,7 @@ const ResponseButtons: React.FC<ResponseButtonsProps> = ({
   onResponse,
 }) => {
   return (
-    <>
+    <div className="flex gap-2">
       <Button 
         variant="outline" 
         className="text-destructive hover:bg-destructive/10"
@@ -31,7 +31,7 @@ const ResponseButtons: React.FC<ResponseButtonsProps> = ({
         <CheckCircle className="h-4 w-4 mr-1" />
         {isResponding ? 'Processing...' : 'Accept'}
       </Button>
-    </>
+    </div>
   );
 };
 

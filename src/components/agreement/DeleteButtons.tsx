@@ -32,7 +32,7 @@ const DeleteButtons: React.FC<DeleteButtonsProps> = ({
   
   if (canDelete) {
     return (
-      <>
+      <div className="flex flex-col items-end">
         <Button 
           variant="ghost" 
           className="text-destructive hover:bg-destructive/10"
@@ -47,7 +47,7 @@ const DeleteButtons: React.FC<DeleteButtonsProps> = ({
             Waiting for other party to delete...
           </p>
         )}
-      </>
+      </div>
     );
   }
   
