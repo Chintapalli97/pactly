@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { CheckCircle, XCircle, Trash2, Link } from 'lucide-react';
 import { toast } from '@/lib/toast';
 import { AgreementStatus } from '@/types/agreement';
+import { verifyAgreementExists } from '@/utils/agreementUtils';
 
 interface AgreementActionsProps {
   id: string;
@@ -33,9 +34,14 @@ const AgreementActions: React.FC<AgreementActionsProps> = ({
 
   const copyShareLink = () => {
     try {
-      const url = `${window.location.origin}/agreements/${id}`;
-      navigator.clipboard.writeText(url);
-      toast.success('Link copied to clipboard');
+      // Verify the agreement exists before copying the link
+      if (verifyAgreementExists(id)) {
+        const url = `${window.location.origin}/agreements/${id}`;
+        navigator.clipboard.writeText(url);
+        toast.success('Link copied to clipboard');
+      } else {
+        toast.error('Cannot copy link: Agreement not found');
+      }
     } catch (error) {
       console.error('Failed to copy link:', error);
       toast.error('Failed to copy link to clipboard');

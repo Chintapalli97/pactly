@@ -12,6 +12,7 @@ import AgreementActions from '@/components/agreement/AgreementActions';
 import LoginPrompt from '@/components/agreement/LoginPrompt';
 import LoadingState from '@/components/agreement/LoadingState';
 import NotFoundState from '@/components/agreement/NotFoundState';
+import { getAgreementById as getAgreementByIdUtil } from '@/utils/agreementUtils';
 
 const AgreementDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -20,18 +21,58 @@ const AgreementDetail = () => {
   const [isResponding, setIsResponding] = useState(false);
   const [agreement, setAgreement] = useState(null);
   const [notFound, setNotFound] = useState(false);
+  const [localLoading, setLocalLoading] = useState(true);
   
   useEffect(() => {
-    if (id) {
-      const foundAgreement = getAgreementById(id);
-      setAgreement(foundAgreement);
-      setNotFound(!foundAgreement);
+    const loadAgreement = () => {
+      if (!id) {
+        setNotFound(true);
+        setLocalLoading(false);
+        return;
+      }
+
+      // First try from context
+      let foundAgreement = getAgreementById(id);
+      
+      // If not found in context, try directly from localStorage
+      if (!foundAgreement) {
+        console.log('Agreement not found in context, trying localStorage...');
+        foundAgreement = getAgreementByIdUtil(id);
+      }
       
       if (foundAgreement) {
+        console.log('Agreement found:', foundAgreement);
+        setAgreement(foundAgreement);
         document.title = `Agreement | PactPal`;
+      } else {
+        console.log('Agreement not found with ID:', id);
+        setNotFound(true);
       }
-    }
+      
+      setLocalLoading(false);
+    };
+    
+    loadAgreement();
+    
+    // Listen for storage events to reload agreement if it changes in another tab
+    const handleStorageChange = () => {
+      loadAgreement();
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
+    
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+    };
   }, [id, getAgreementById]);
+  
+  if (loading || localLoading) {
+    return <LoadingState />;
+  }
+  
+  if (notFound || !agreement) {
+    return <NotFoundState />;
+  }
   
   const isCreator = user?.id === agreement?.creatorId;
   const isRecipient = user?.id === agreement?.recipientId;
@@ -57,18 +98,6 @@ const AgreementDetail = () => {
     if (!id) return;
     await requestDeleteAgreement(id);
   };
-  
-  if (loading) {
-    return <LoadingState />;
-  }
-  
-  if (notFound) {
-    return <NotFoundState />;
-  }
-  
-  if (!agreement) {
-    return <LoadingState />;
-  }
   
   return (
     <Layout>
