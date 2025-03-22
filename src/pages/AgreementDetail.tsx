@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useAgreements } from '@/hooks/useAgreementsContext';
 import { useAuth } from '@/context/AuthContext';
 import Layout from '@/components/Layout';
@@ -14,12 +14,15 @@ import LoadingState from '@/components/agreement/LoadingState';
 import NotFoundState from '@/components/agreement/NotFoundState';
 import { 
   getAgreementById as getAgreementByIdUtil,
-  ensureAgreementInStorage 
+  ensureAgreementInStorage,
+  getStoredAgreements 
 } from '@/utils/agreementUtils';
 import { Agreement } from '@/types/agreement';
+import { toast } from '@/lib/toast';
 
 const AgreementDetail = () => {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const { getAgreementById, respondToAgreement, requestDeleteAgreement, loading: contextLoading } = useAgreements();
   const { user, isAuthenticated } = useAuth();
   const [isResponding, setIsResponding] = useState(false);
@@ -38,27 +41,42 @@ const AgreementDetail = () => {
 
       console.log("Loading agreement with ID:", id);
 
-      // First try from context
-      let foundAgreement = getAgreementById(id);
-      
-      // If not found in context, try directly from localStorage
-      if (!foundAgreement) {
-        console.log('Agreement not found in context, trying localStorage...');
-        foundAgreement = getAgreementByIdUtil(id);
-      }
-      
-      if (foundAgreement) {
-        console.log('Agreement found:', foundAgreement);
-        setAgreement(foundAgreement);
-        // Ensure the agreement is properly stored in localStorage
-        ensureAgreementInStorage(foundAgreement);
-        document.title = `Agreement | PactPal`;
-      } else {
-        console.log('Agreement not found with ID:', id);
+      try {
+        // First try from context
+        let foundAgreement = getAgreementById(id);
+        
+        // If not found in context, try directly from localStorage
+        if (!foundAgreement) {
+          console.log('Agreement not found in context, trying localStorage...');
+          foundAgreement = getAgreementByIdUtil(id);
+          
+          // If found in localStorage but not in context, refresh the context
+          if (foundAgreement) {
+            console.log('Agreement found in localStorage but not in context, ensuring it is in storage');
+            ensureAgreementInStorage(foundAgreement);
+            
+            // Trigger a storage event to refresh the agreements in other tabs
+            const event = new Event('agreementsUpdated');
+            document.dispatchEvent(event);
+          }
+        }
+        
+        if (foundAgreement) {
+          console.log('Agreement found:', foundAgreement);
+          setAgreement(foundAgreement);
+          document.title = `Agreement | PactPal`;
+        } else {
+          console.log('Agreement not found with ID:', id);
+          setNotFound(true);
+          toast.error("Agreement not found. It may have been deleted or doesn't exist.");
+        }
+      } catch (error) {
+        console.error("Error loading agreement:", error);
         setNotFound(true);
+        toast.error("Error loading agreement. Please try again.");
+      } finally {
+        setLocalLoading(false);
       }
-      
-      setLocalLoading(false);
     };
     
     loadAgreement();
@@ -115,6 +133,9 @@ const AgreementDetail = () => {
       if (updatedAgreement) {
         setAgreement(updatedAgreement);
       }
+    } catch (error) {
+      console.error("Error responding to agreement:", error);
+      toast.error("Failed to respond to agreement. Please try again.");
     } finally {
       setIsResponding(false);
     }
@@ -122,14 +143,20 @@ const AgreementDetail = () => {
   
   const handleRequestDelete = async () => {
     if (!id) return;
-    await requestDeleteAgreement(id);
-    // Update the local agreement state after delete request
-    const updatedAgreement = getAgreementById(id);
-    if (updatedAgreement) {
-      setAgreement(updatedAgreement);
-    } else {
-      // Agreement was fully deleted
-      setNotFound(true);
+    
+    try {
+      await requestDeleteAgreement(id);
+      // Update the local agreement state after delete request
+      const updatedAgreement = getAgreementById(id);
+      if (updatedAgreement) {
+        setAgreement(updatedAgreement);
+      } else {
+        // Agreement was fully deleted
+        setNotFound(true);
+      }
+    } catch (error) {
+      console.error("Error requesting deletion:", error);
+      toast.error("Failed to request deletion. Please try again.");
     }
   };
   

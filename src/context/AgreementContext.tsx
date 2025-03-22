@@ -64,4 +64,4 @@ export const AgreementProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   );
 };
 
-export { useAgreements } from '@/hooks/useAgreementsContext';
+// Removed the circular import

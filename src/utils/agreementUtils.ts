@@ -47,10 +47,18 @@ export const saveAgreements = (agreements: Agreement[]): void => {
     const event = new Event('agreementsUpdated');
     document.dispatchEvent(event);
     
-    // Dispatch storage event for cross-tab communication
-    window.dispatchEvent(new StorageEvent('storage', {
-      key: AGREEMENTS_STORAGE_KEY
-    }));
+    // Since the storage event doesn't fire in the same tab that makes the change,
+    // we manually trigger it to ensure consistency across tabs
+    try {
+      // This will only work in same-origin contexts, which is fine for our app
+      window.dispatchEvent(new StorageEvent('storage', {
+        key: AGREEMENTS_STORAGE_KEY,
+        newValue: JSON.stringify(agreements),
+        storageArea: localStorage
+      }));
+    } catch (e) {
+      console.warn("Could not dispatch storage event:", e);
+    }
   } catch (error) {
     console.error('Error saving agreements:', error);
     toast.error('Failed to save agreement data');
@@ -86,16 +94,34 @@ export const getAgreementById = (id: string): Agreement | undefined => {
 export const hasNewNotifications = (userId: string | undefined): boolean => {
   if (!userId) return false;
   
-  const notifications = JSON.parse(localStorage.getItem(NOTIFICATIONS_KEY) || '{}');
-  return !!notifications[userId];
+  try {
+    const storedData = localStorage.getItem(NOTIFICATIONS_KEY);
+    if (!storedData) return false;
+    
+    const notifications = JSON.parse(storedData);
+    return !!notifications[userId];
+  } catch (error) {
+    console.error("Error checking notifications:", error);
+    return false;
+  }
 };
 
 export const updateNotifications = (userId: string, hasNotification: boolean): void => {
   if (!userId) return;
   
-  const notifications = JSON.parse(localStorage.getItem(NOTIFICATIONS_KEY) || '{}');
-  notifications[userId] = hasNotification;
-  localStorage.setItem(NOTIFICATIONS_KEY, JSON.stringify(notifications));
+  try {
+    const storedData = localStorage.getItem(NOTIFICATIONS_KEY) || '{}';
+    const notifications = JSON.parse(storedData);
+    notifications[userId] = hasNotification;
+    localStorage.setItem(NOTIFICATIONS_KEY, JSON.stringify(notifications));
+    
+    // Dispatch storage event for cross-tab communication
+    window.dispatchEvent(new StorageEvent('storage', {
+      key: NOTIFICATIONS_KEY
+    }));
+  } catch (error) {
+    console.error("Error updating notifications:", error);
+  }
 };
 
 export const addNotificationForUser = (userId: string): void => {
@@ -134,8 +160,28 @@ export const ensureAgreementInStorage = (agreement: Agreement): void => {
       console.log(`Adding agreement ${agreement.id} to storage`);
       agreements.push(agreement);
       saveAgreements(agreements);
+    } else {
+      console.log(`Agreement ${agreement.id} already exists in storage`);
     }
   } catch (error) {
     console.error("Error ensuring agreement in storage:", error);
+  }
+};
+
+// Clear all agreements from storage (for testing/debugging)
+export const clearAllAgreements = (): void => {
+  try {
+    localStorage.setItem(AGREEMENTS_STORAGE_KEY, JSON.stringify([]));
+    console.log("All agreements cleared from storage");
+    
+    // Dispatch events to update UI
+    const event = new Event('agreementsUpdated');
+    document.dispatchEvent(event);
+    
+    window.dispatchEvent(new StorageEvent('storage', {
+      key: AGREEMENTS_STORAGE_KEY
+    }));
+  } catch (error) {
+    console.error("Error clearing agreements:", error);
   }
 };

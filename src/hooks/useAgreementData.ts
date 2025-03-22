@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Agreement } from '@/types/agreement';
 import { getStoredAgreements, getAgreementById as getAgreementByIdUtil } from '@/utils/agreementUtils';
+import { toast } from '@/lib/toast';
 
 export const useAgreementData = (userId: string | undefined) => {
   const [agreements, setAgreements] = useState<Agreement[]>([]);
@@ -15,6 +16,7 @@ export const useAgreementData = (userId: string | undefined) => {
       setAgreements(storedAgreements);
     } catch (error) {
       console.error("Error loading agreements:", error);
+      toast.error("Failed to load agreements. Please refresh the page.");
     } finally {
       setLoading(false);
     }
@@ -31,15 +33,30 @@ export const useAgreementData = (userId: string | undefined) => {
       }
     };
     
+    // Set up custom event listener to catch changes from the current tab
+    const handleCustomEvent = () => {
+      console.log("Custom event detected, reloading agreements");
+      loadAgreements();
+    };
+    
     window.addEventListener('storage', handleStorageChange);
+    document.addEventListener('agreementsUpdated', handleCustomEvent);
+    
+    // Set up an interval to refresh agreements periodically
+    const intervalId = setInterval(loadAgreements, 60000); // Refresh every minute
     
     return () => {
       window.removeEventListener('storage', handleStorageChange);
+      document.removeEventListener('agreementsUpdated', handleCustomEvent);
+      clearInterval(intervalId);
     };
   }, [loadAgreements]);
 
   const getAgreementById = useCallback((id: string): Agreement | undefined => {
-    if (!id) return undefined;
+    if (!id) {
+      console.log("No ID provided to getAgreementById");
+      return undefined;
+    }
     
     console.log(`Looking for agreement with ID: ${id}`);
     
