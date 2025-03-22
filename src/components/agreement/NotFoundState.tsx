@@ -4,10 +4,14 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import Layout from '@/components/Layout';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
-import { Info } from 'lucide-react';
+import { Info, RefreshCcw } from 'lucide-react';
 
 const NotFoundState: React.FC = () => {
   const navigate = useNavigate();
+  
+  const handleRefresh = () => {
+    window.location.reload();
+  };
   
   return (
     <Layout>
@@ -22,19 +26,24 @@ const NotFoundState: React.FC = () => {
           <AlertTitle>Possible reasons:</AlertTitle>
           <AlertDescription>
             <ul className="list-disc text-left pl-5 mt-2">
-              <li>The link might be incorrect</li>
-              <li>The agreement has been deleted</li>
+              <li>The link might be incorrect or expired</li>
+              <li>The agreement has been deleted by the creator or recipient</li>
+              <li>The agreement may not have been saved properly</li>
               <li>You might need to log in to view this agreement</li>
             </ul>
           </AlertDescription>
         </Alert>
         
-        <div className="flex gap-4">
+        <div className="flex flex-col sm:flex-row gap-4">
           <Button onClick={() => navigate('/dashboard')}>
             Go to Dashboard
           </Button>
           <Button variant="outline" onClick={() => navigate('/my-agreements')}>
             My Agreements
+          </Button>
+          <Button variant="ghost" onClick={handleRefresh} className="flex items-center gap-1">
+            <RefreshCcw className="h-4 w-4" />
+            Refresh
           </Button>
         </div>
       </div>

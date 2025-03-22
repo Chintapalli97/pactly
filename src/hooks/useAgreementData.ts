@@ -8,9 +8,16 @@ export const useAgreementData = (userId: string | undefined) => {
   const [loading, setLoading] = useState(true);
 
   const loadAgreements = useCallback(() => {
-    const storedAgreements = getStoredAgreements();
-    setAgreements(storedAgreements);
-    setLoading(false);
+    try {
+      console.log("Loading agreements from storage...");
+      const storedAgreements = getStoredAgreements();
+      console.log("Loaded agreements:", storedAgreements.length);
+      setAgreements(storedAgreements);
+    } catch (error) {
+      console.error("Error loading agreements:", error);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => {
@@ -19,6 +26,7 @@ export const useAgreementData = (userId: string | undefined) => {
     // Set up storage event listener to catch changes from other tabs
     const handleStorageChange = (event: StorageEvent) => {
       if (event.key === 'pact_pal_agreements') {
+        console.log("Storage event detected, reloading agreements");
         loadAgreements();
       }
     };
@@ -31,12 +39,34 @@ export const useAgreementData = (userId: string | undefined) => {
   }, [loadAgreements]);
 
   const getAgreementById = useCallback((id: string): Agreement | undefined => {
+    if (!id) return undefined;
+    
+    console.log(`Looking for agreement with ID: ${id}`);
+    
     // First try to find it in the current state
     const agreementInState = agreements.find(a => a.id === id);
-    if (agreementInState) return agreementInState;
+    
+    if (agreementInState) {
+      console.log("Agreement found in state:", agreementInState);
+      return agreementInState;
+    } else {
+      console.log("Agreement not found in state, checking localStorage...");
+    }
     
     // If not found in state, try to find it in localStorage directly
-    return getAgreementByIdUtil(id);
+    const agreementFromStorage = getAgreementByIdUtil(id);
+    
+    if (agreementFromStorage) {
+      console.log("Agreement found in localStorage:", agreementFromStorage);
+      // Update the state with this agreement if it's not already there
+      if (!agreements.some(a => a.id === id)) {
+        setAgreements(prev => [...prev, agreementFromStorage]);
+      }
+    } else {
+      console.log(`No agreement found with ID: ${id}`);
+    }
+    
+    return agreementFromStorage;
   }, [agreements]);
 
   // Filter agreements by creator/recipient

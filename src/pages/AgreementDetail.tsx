@@ -12,24 +12,31 @@ import AgreementActions from '@/components/agreement/AgreementActions';
 import LoginPrompt from '@/components/agreement/LoginPrompt';
 import LoadingState from '@/components/agreement/LoadingState';
 import NotFoundState from '@/components/agreement/NotFoundState';
-import { getAgreementById as getAgreementByIdUtil } from '@/utils/agreementUtils';
+import { 
+  getAgreementById as getAgreementByIdUtil,
+  ensureAgreementInStorage 
+} from '@/utils/agreementUtils';
+import { Agreement } from '@/types/agreement';
 
 const AgreementDetail = () => {
   const { id } = useParams<{ id: string }>();
-  const { getAgreementById, respondToAgreement, requestDeleteAgreement, loading } = useAgreements();
+  const { getAgreementById, respondToAgreement, requestDeleteAgreement, loading: contextLoading } = useAgreements();
   const { user, isAuthenticated } = useAuth();
   const [isResponding, setIsResponding] = useState(false);
-  const [agreement, setAgreement] = useState(null);
+  const [agreement, setAgreement] = useState<Agreement | null>(null);
   const [notFound, setNotFound] = useState(false);
   const [localLoading, setLocalLoading] = useState(true);
   
   useEffect(() => {
     const loadAgreement = () => {
       if (!id) {
+        console.log("No agreement ID provided in URL");
         setNotFound(true);
         setLocalLoading(false);
         return;
       }
+
+      console.log("Loading agreement with ID:", id);
 
       // First try from context
       let foundAgreement = getAgreementById(id);
@@ -43,6 +50,8 @@ const AgreementDetail = () => {
       if (foundAgreement) {
         console.log('Agreement found:', foundAgreement);
         setAgreement(foundAgreement);
+        // Ensure the agreement is properly stored in localStorage
+        ensureAgreementInStorage(foundAgreement);
         document.title = `Agreement | PactPal`;
       } else {
         console.log('Agreement not found with ID:', id);
@@ -55,18 +64,30 @@ const AgreementDetail = () => {
     loadAgreement();
     
     // Listen for storage events to reload agreement if it changes in another tab
-    const handleStorageChange = () => {
-      loadAgreement();
+    const handleStorageChange = (event: StorageEvent) => {
+      if (event.key === 'pact_pal_agreements') {
+        console.log("Storage event detected, reloading agreement");
+        loadAgreement();
+      }
     };
     
     window.addEventListener('storage', handleStorageChange);
     
+    // Also listen for custom events from the current tab
+    const handleCustomEvent = () => {
+      console.log("Custom event detected, reloading agreement");
+      loadAgreement();
+    };
+    
+    document.addEventListener('agreementsUpdated', handleCustomEvent);
+    
     return () => {
       window.removeEventListener('storage', handleStorageChange);
+      document.removeEventListener('agreementsUpdated', handleCustomEvent);
     };
   }, [id, getAgreementById]);
   
-  if (loading || localLoading) {
+  if (contextLoading || localLoading) {
     return <LoadingState />;
   }
   
@@ -89,6 +110,11 @@ const AgreementDetail = () => {
     try {
       setIsResponding(true);
       await respondToAgreement(id, accept);
+      // Update the local agreement state after response
+      const updatedAgreement = getAgreementById(id);
+      if (updatedAgreement) {
+        setAgreement(updatedAgreement);
+      }
     } finally {
       setIsResponding(false);
     }
@@ -97,6 +123,14 @@ const AgreementDetail = () => {
   const handleRequestDelete = async () => {
     if (!id) return;
     await requestDeleteAgreement(id);
+    // Update the local agreement state after delete request
+    const updatedAgreement = getAgreementById(id);
+    if (updatedAgreement) {
+      setAgreement(updatedAgreement);
+    } else {
+      // Agreement was fully deleted
+      setNotFound(true);
+    }
   };
   
   return (
