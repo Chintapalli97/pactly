@@ -6,15 +6,37 @@ export const AGREEMENTS_STORAGE_KEY = 'pact_pal_agreements';
 export const NOTIFICATIONS_KEY = 'pact_pal_notifications';
 
 export const getStoredAgreements = (): Agreement[] => {
-  if (!localStorage.getItem(AGREEMENTS_STORAGE_KEY)) {
+  try {
+    const storedData = localStorage.getItem(AGREEMENTS_STORAGE_KEY);
+    if (!storedData) {
+      // Initialize empty array if no data exists
+      localStorage.setItem(AGREEMENTS_STORAGE_KEY, JSON.stringify([]));
+      return [];
+    }
+    
+    // Parse the stored agreements and validate
+    const agreements = JSON.parse(storedData);
+    return Array.isArray(agreements) ? agreements : [];
+  } catch (error) {
+    console.error('Error retrieving agreements:', error);
+    // Reset storage if corrupted
     localStorage.setItem(AGREEMENTS_STORAGE_KEY, JSON.stringify([]));
+    return [];
   }
-  
-  return JSON.parse(localStorage.getItem(AGREEMENTS_STORAGE_KEY) || '[]');
 };
 
 export const saveAgreements = (agreements: Agreement[]): void => {
-  localStorage.setItem(AGREEMENTS_STORAGE_KEY, JSON.stringify(agreements));
+  try {
+    localStorage.setItem(AGREEMENTS_STORAGE_KEY, JSON.stringify(agreements));
+  } catch (error) {
+    console.error('Error saving agreements:', error);
+    toast.error('Failed to save agreement data');
+  }
+};
+
+export const getAgreementById = (id: string): Agreement | undefined => {
+  const agreements = getStoredAgreements();
+  return agreements.find(agreement => agreement.id === id);
 };
 
 export const hasNewNotifications = (userId: string | undefined): boolean => {

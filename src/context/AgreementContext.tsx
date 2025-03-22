@@ -1,5 +1,5 @@
 
-import React, { createContext, useState, useEffect } from 'react';
+import React, { createContext, useState, useEffect, useCallback } from 'react';
 import { useAuth } from './AuthContext';
 import { toast } from '@/lib/toast';
 import { Agreement, AgreementStatus } from '@/types/agreement';
@@ -9,7 +9,8 @@ import {
   hasNewNotifications, 
   updateNotifications,
   addNotificationForUser,
-  simulateApiDelay
+  simulateApiDelay,
+  getAgreementById as getAgreementByIdUtil
 } from '@/utils/agreementUtils';
 
 type AgreementContextType = {
@@ -37,14 +38,40 @@ export const AgreementProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const receivedAgreements = agreements.filter(a => a.recipientId === user?.id);
 
   useEffect(() => {
-    const storedAgreements = getStoredAgreements();
-    setAgreements(storedAgreements);
-    setLoading(false);
+    const loadAgreements = () => {
+      const storedAgreements = getStoredAgreements();
+      setAgreements(storedAgreements);
+      setLoading(false);
+      
+      if (user) {
+        setHasNotifications(hasNewNotifications(user.id));
+      }
+    };
     
-    if (user) {
-      setHasNotifications(hasNewNotifications(user.id));
-    }
+    loadAgreements();
+    
+    // Set up storage event listener to catch changes from other tabs
+    const handleStorageChange = (event: StorageEvent) => {
+      if (event.key === 'pact_pal_agreements') {
+        loadAgreements();
+      }
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
+    
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+    };
   }, [user]);
+
+  const getAgreementById = useCallback((id: string): Agreement | undefined => {
+    // First try to find it in the current state
+    const agreementInState = agreements.find(a => a.id === id);
+    if (agreementInState) return agreementInState;
+    
+    // If not found in state, try to find it in localStorage directly
+    return getAgreementByIdUtil(id);
+  }, [agreements]);
 
   const createAgreement = async (message: string): Promise<string> => {
     if (!user) throw new Error('You must be logged in to create an agreement');
@@ -59,7 +86,7 @@ export const AgreementProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         createdAt: new Date().toISOString(),
         creatorId: user.id,
         creatorName: user.name,
-        status: 'pending',
+        status: 'pending' as AgreementStatus,
         deleteRequestedBy: []
       };
       
@@ -165,10 +192,6 @@ export const AgreementProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     } finally {
       setLoading(false);
     }
-  };
-
-  const getAgreementById = (id: string) => {
-    return agreements.find(a => a.id === id);
   };
 
   const clearNotifications = () => {

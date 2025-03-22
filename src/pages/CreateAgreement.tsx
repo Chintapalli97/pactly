@@ -14,7 +14,7 @@ const CreateAgreement = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [agreementId, setAgreementId] = useState<string | null>(null);
   const [shareLink, setShareLink] = useState('');
-  const { createAgreement } = useAgreements();
+  const { createAgreement, getAgreementById } = useAgreements();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -27,6 +27,13 @@ const CreateAgreement = () => {
     try {
       setIsSubmitting(true);
       const id = await createAgreement(message);
+      
+      // Verify that the agreement was created
+      const createdAgreement = getAgreementById(id);
+      if (!createdAgreement) {
+        throw new Error('Agreement creation failed');
+      }
+      
       setAgreementId(id);
       const url = `${window.location.origin}/agreements/${id}`;
       setShareLink(url);
@@ -38,8 +45,19 @@ const CreateAgreement = () => {
   };
 
   const copyToClipboard = () => {
-    navigator.clipboard.writeText(shareLink);
-    toast.success('Link copied to clipboard');
+    try {
+      navigator.clipboard.writeText(shareLink);
+      toast.success('Link copied to clipboard');
+    } catch (error) {
+      console.error('Failed to copy link:', error);
+      toast.error('Failed to copy link to clipboard');
+    }
+  };
+
+  const handleViewAgreement = () => {
+    if (agreementId) {
+      navigate(`/agreements/${agreementId}`);
+    }
   };
 
   return (
@@ -118,6 +136,14 @@ const CreateAgreement = () => {
             </div>
             
             <div className="space-y-3">
+              <Button 
+                variant="outline" 
+                className="w-full" 
+                onClick={() => navigate(`/agreements/${agreementId}`)}
+              >
+                View Agreement
+              </Button>
+              
               <Button 
                 variant="outline" 
                 className="w-full" 

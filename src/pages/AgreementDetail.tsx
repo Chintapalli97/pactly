@@ -18,8 +18,20 @@ const AgreementDetail = () => {
   const { getAgreementById, respondToAgreement, requestDeleteAgreement, loading } = useAgreements();
   const { user, isAuthenticated } = useAuth();
   const [isResponding, setIsResponding] = useState(false);
+  const [agreement, setAgreement] = useState(null);
+  const [notFound, setNotFound] = useState(false);
   
-  const agreement = id ? getAgreementById(id) : undefined;
+  useEffect(() => {
+    if (id) {
+      const foundAgreement = getAgreementById(id);
+      setAgreement(foundAgreement);
+      setNotFound(!foundAgreement);
+      
+      if (foundAgreement) {
+        document.title = `Agreement | PactPal`;
+      }
+    }
+  }, [id, getAgreementById]);
   
   const isCreator = user?.id === agreement?.creatorId;
   const isRecipient = user?.id === agreement?.recipientId;
@@ -46,18 +58,16 @@ const AgreementDetail = () => {
     await requestDeleteAgreement(id);
   };
   
-  useEffect(() => {
-    if (agreement) {
-      document.title = `Agreement | PactPal`;
-    }
-  }, [agreement]);
-  
   if (loading) {
     return <LoadingState />;
   }
   
-  if (!agreement) {
+  if (notFound) {
     return <NotFoundState />;
+  }
+  
+  if (!agreement) {
+    return <LoadingState />;
   }
   
   return (

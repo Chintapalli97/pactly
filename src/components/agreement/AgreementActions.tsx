@@ -32,9 +32,14 @@ const AgreementActions: React.FC<AgreementActionsProps> = ({
   const navigate = useNavigate();
 
   const copyShareLink = () => {
-    const url = `${window.location.origin}/agreements/${id}`;
-    navigator.clipboard.writeText(url);
-    toast.success('Link copied to clipboard');
+    try {
+      const url = `${window.location.origin}/agreements/${id}`;
+      navigator.clipboard.writeText(url);
+      toast.success('Link copied to clipboard');
+    } catch (error) {
+      console.error('Failed to copy link:', error);
+      toast.error('Failed to copy link to clipboard');
+    }
   };
 
   return (
