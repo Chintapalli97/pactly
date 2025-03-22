@@ -1,11 +1,13 @@
+
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAgreements } from '@/context/AgreementContext';
+import { useAgreements } from '@/hooks/useAgreementsContext';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import Layout from '@/components/Layout';
-import { Share2, PencilIcon, Send, ArrowLeft } from 'lucide-react';
+import { Link, PencilIcon, Send, ArrowLeft } from 'lucide-react';
+import { toast } from '@/lib/toast';
 
 const CreateAgreement = () => {
   const [message, setMessage] = useState('');
@@ -37,6 +39,7 @@ const CreateAgreement = () => {
 
   const copyToClipboard = () => {
     navigator.clipboard.writeText(shareLink);
+    toast.success('Link copied to clipboard');
   };
 
   return (
@@ -105,12 +108,12 @@ const CreateAgreement = () => {
                 {shareLink}
               </div>
               <Button 
-                variant="outline" 
-                size="icon" 
+                variant="outline"
                 onClick={copyToClipboard}
                 className="flex-shrink-0"
               >
-                <Share2 className="h-4 w-4" />
+                <Link className="h-4 w-4 mr-1" />
+                Copy Link
               </Button>
             </div>
             

@@ -1,13 +1,15 @@
+
 import React from 'react';
 import { Agreement } from '@/types/agreement';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import StatusBadge from '@/components/StatusBadge';
 import { formatDistanceToNow } from 'date-fns';
-import { Trash2, Share2, Eye } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Trash2, Link, Eye } from 'lucide-react';
+import { Link as RouterLink } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { cn } from '@/lib/utils';
+import { toast } from '@/lib/toast';
 
 interface AgreementCardProps {
   agreement: Agreement;
@@ -31,7 +33,7 @@ const AgreementCard: React.FC<AgreementCardProps> = ({
   const isCreator = user?.id === agreement.creatorId;
   const isRecipient = user?.id === agreement.recipientId;
   
-  const canRequestDelete = (status === 'accepted' && !userRequested);
+  const canRequestDelete = status === 'pending' ? isCreator : (status === 'accepted' && !userRequested);
   
   const getShareUrl = () => {
     const baseUrl = window.location.origin;
@@ -40,6 +42,7 @@ const AgreementCard: React.FC<AgreementCardProps> = ({
 
   const copyToClipboard = () => {
     navigator.clipboard.writeText(getShareUrl());
+    toast.success('Link copied to clipboard');
   };
 
   return (
@@ -80,18 +83,18 @@ const AgreementCard: React.FC<AgreementCardProps> = ({
           <div className="flex gap-2">
             {status === 'pending' && isCreator && (
               <Button variant="outline" size="sm" onClick={copyToClipboard}>
-                <Share2 className="h-4 w-4 mr-1" />
-                Share
+                <Link className="h-4 w-4 mr-1" />
+                Copy Link
               </Button>
             )}
             
             {!isPreview && (
-              <Link to={`/agreements/${id}`}>
+              <RouterLink to={`/agreements/${id}`}>
                 <Button variant="outline" size="sm">
                   <Eye className="h-4 w-4 mr-1" />
                   View
                 </Button>
-              </Link>
+              </RouterLink>
             )}
           </div>
           

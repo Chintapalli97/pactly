@@ -126,26 +126,39 @@ export const AgreementProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       
       const agreement = updatedAgreements[agreementIndex];
       
-      if (agreement.status !== 'accepted') {
-        throw new Error('Only accepted agreements can be deleted');
+      // If the agreement is pending and the user is the creator, they can delete it immediately
+      if (agreement.status === 'pending' && agreement.creatorId === user.id) {
+        updatedAgreements = updatedAgreements.filter(a => a.id !== id);
+        toast.success('Agreement deleted!');
+      } 
+      // For accepted agreements, both parties need to request deletion
+      else if (agreement.status === 'accepted') {
+        if (!agreement.deleteRequestedBy.includes(user.id)) {
+          agreement.deleteRequestedBy.push(user.id);
+          
+          // Notify the other user about the delete request
+          const otherUserId = user.id === agreement.creatorId ? 
+            agreement.recipientId : agreement.creatorId;
+          if (otherUserId) {
+            addNotificationForUser(otherUserId);
+          }
+          
+          if (agreement.deleteRequestedBy.length === 2) {
+            updatedAgreements = updatedAgreements.filter(a => a.id !== id);
+            toast.success('Agreement deleted!');
+          } else {
+            toast.info('Delete requested. The agreement will be deleted when the other party also requests deletion.');
+            updatedAgreements[agreementIndex] = agreement;
+          }
+        } else {
+          toast.info('You already requested to delete this agreement');
+        }
+      } else {
+        toast.error('You cannot delete this agreement');
       }
       
-      if (!agreement.deleteRequestedBy.includes(user.id)) {
-        agreement.deleteRequestedBy.push(user.id);
-        
-        if (agreement.deleteRequestedBy.length === 2) {
-          updatedAgreements = updatedAgreements.filter(a => a.id !== id);
-          toast.success('Agreement deleted!');
-        } else {
-          toast.info('Delete requested. The agreement will be deleted when the other party also requests deletion.');
-          updatedAgreements[agreementIndex] = agreement;
-        }
-        
-        saveAgreements(updatedAgreements);
-        setAgreements(updatedAgreements);
-      } else {
-        toast.info('You already requested to delete this agreement');
-      }
+      saveAgreements(updatedAgreements);
+      setAgreements(updatedAgreements);
     } catch (error: any) {
       toast.error(error.message || 'Failed to delete agreement');
       throw error;

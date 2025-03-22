@@ -2,7 +2,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { CheckCircle, XCircle, Trash2, Share2 } from 'lucide-react';
+import { CheckCircle, XCircle, Trash2, Link } from 'lucide-react';
 import { toast } from '@/lib/toast';
 import { AgreementStatus } from '@/types/agreement';
 
@@ -67,8 +67,8 @@ const AgreementActions: React.FC<AgreementActionsProps> = ({
             variant="outline"
             onClick={copyShareLink}
           >
-            <Share2 className="h-4 w-4 mr-1" />
-            Share
+            <Link className="h-4 w-4 mr-1" />
+            Copy Link
           </Button>
         )}
       </div>
