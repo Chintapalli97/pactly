@@ -1,20 +1,16 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+
+import React, { createContext, useState, useEffect } from 'react';
 import { useAuth } from './AuthContext';
 import { toast } from '@/lib/toast';
-
-export type AgreementStatus = 'pending' | 'accepted' | 'declined';
-
-export type Agreement = {
-  id: string;
-  message: string;
-  createdAt: string;
-  creatorId: string;
-  creatorName: string;
-  recipientId?: string;
-  recipientName?: string;
-  status: AgreementStatus;
-  deleteRequestedBy: string[];
-};
+import { Agreement } from '@/types/agreement';
+import { 
+  getStoredAgreements, 
+  saveAgreements, 
+  hasNewNotifications, 
+  updateNotifications,
+  addNotificationForUser,
+  simulateApiDelay
+} from '@/utils/agreementUtils';
 
 type AgreementContextType = {
   agreements: Agreement[];
@@ -29,46 +25,33 @@ type AgreementContextType = {
   clearNotifications: () => void;
 };
 
-const AgreementContext = createContext<AgreementContextType | undefined>(undefined);
-
-const AGREEMENTS_STORAGE_KEY = 'pact_pal_agreements';
-const NOTIFICATIONS_KEY = 'pact_pal_notifications';
+export const AgreementContext = createContext<AgreementContextType | undefined>(undefined);
 
 export const AgreementProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user } = useAuth();
   const [agreements, setAgreements] = useState<Agreement[]>([]);
   const [loading, setLoading] = useState(true);
-  const [hasNewNotifications, setHasNewNotifications] = useState(false);
+  const [hasNotifications, setHasNotifications] = useState(false);
 
   const sentAgreements = agreements.filter(a => a.creatorId === user?.id);
   const receivedAgreements = agreements.filter(a => a.recipientId === user?.id);
 
   useEffect(() => {
-    if (!localStorage.getItem(AGREEMENTS_STORAGE_KEY)) {
-      localStorage.setItem(AGREEMENTS_STORAGE_KEY, JSON.stringify([]));
-    }
-    
-    const storedAgreements = JSON.parse(localStorage.getItem(AGREEMENTS_STORAGE_KEY) || '[]');
+    const storedAgreements = getStoredAgreements();
     setAgreements(storedAgreements);
     setLoading(false);
     
     if (user) {
-      const notifications = JSON.parse(localStorage.getItem(NOTIFICATIONS_KEY) || '{}');
-      setHasNewNotifications(!!notifications[user.id]);
+      setHasNotifications(hasNewNotifications(user.id));
     }
   }, [user]);
-
-  const saveAgreements = (updatedAgreements: Agreement[]) => {
-    localStorage.setItem(AGREEMENTS_STORAGE_KEY, JSON.stringify(updatedAgreements));
-    setAgreements(updatedAgreements);
-  };
 
   const createAgreement = async (message: string): Promise<string> => {
     if (!user) throw new Error('You must be logged in to create an agreement');
     
     setLoading(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 500));
+      await simulateApiDelay();
       
       const newAgreement: Agreement = {
         id: crypto.randomUUID(),
@@ -82,6 +65,7 @@ export const AgreementProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       
       const updatedAgreements = [...agreements, newAgreement];
       saveAgreements(updatedAgreements);
+      setAgreements(updatedAgreements);
       
       toast.success('Agreement created!');
       return newAgreement.id;
@@ -98,25 +82,25 @@ export const AgreementProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     
     setLoading(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 500));
+      await simulateApiDelay();
       
       const updatedAgreements = agreements.map(agreement => {
         if (agreement.id === id) {
-          const notifications = JSON.parse(localStorage.getItem(NOTIFICATIONS_KEY) || '{}');
-          notifications[agreement.creatorId] = true;
-          localStorage.setItem(NOTIFICATIONS_KEY, JSON.stringify(notifications));
+          // Notify the creator of the response
+          addNotificationForUser(agreement.creatorId);
           
           return {
             ...agreement,
             recipientId: user.id,
             recipientName: user.name,
-            status: accept ? 'accepted' : 'declined' as AgreementStatus
+            status: accept ? 'accepted' : 'declined'
           };
         }
         return agreement;
       });
       
       saveAgreements(updatedAgreements);
+      setAgreements(updatedAgreements);
       toast.success(`Agreement ${accept ? 'accepted' : 'declined'}!`);
     } catch (error: any) {
       toast.error(error.message || 'Failed to respond to agreement');
@@ -131,7 +115,7 @@ export const AgreementProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     
     setLoading(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 500));
+      await simulateApiDelay();
       
       let updatedAgreements = [...agreements];
       const agreementIndex = updatedAgreements.findIndex(a => a.id === id);
@@ -158,6 +142,7 @@ export const AgreementProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         }
         
         saveAgreements(updatedAgreements);
+        setAgreements(updatedAgreements);
       } else {
         toast.info('You already requested to delete this agreement');
       }
@@ -175,10 +160,8 @@ export const AgreementProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
   const clearNotifications = () => {
     if (user) {
-      const notifications = JSON.parse(localStorage.getItem(NOTIFICATIONS_KEY) || '{}');
-      notifications[user.id] = false;
-      localStorage.setItem(NOTIFICATIONS_KEY, JSON.stringify(notifications));
-      setHasNewNotifications(false);
+      updateNotifications(user.id, false);
+      setHasNotifications(false);
     }
   };
 
@@ -192,7 +175,7 @@ export const AgreementProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       respondToAgreement,
       requestDeleteAgreement,
       getAgreementById,
-      hasNewNotifications,
+      hasNewNotifications: hasNotifications,
       clearNotifications
     }}>
       {children}
@@ -200,10 +183,4 @@ export const AgreementProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   );
 };
 
-export const useAgreements = () => {
-  const context = useContext(AgreementContext);
-  if (context === undefined) {
-    throw new Error('useAgreements must be used within an AgreementProvider');
-  }
-  return context;
-};
+export { useAgreements } from '@/hooks/useAgreementsContext';

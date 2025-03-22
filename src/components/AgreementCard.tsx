@@ -1,6 +1,5 @@
-
 import React from 'react';
-import { Agreement } from '@/context/AgreementContext';
+import { Agreement } from '@/types/agreement';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import StatusBadge from '@/components/StatusBadge';
