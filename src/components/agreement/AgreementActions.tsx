@@ -2,7 +2,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { CheckCircle, XCircle, Trash2, Link } from 'lucide-react';
+import { CheckCircle, XCircle, Trash2, Link, Shield } from 'lucide-react';
 import { toast } from '@/lib/toast';
 import { AgreementStatus } from '@/types/agreement';
 import { verifyAgreementExists } from '@/utils/agreementUtils';
@@ -17,6 +17,7 @@ interface AgreementActionsProps {
   hasRequestedDelete: boolean;
   onResponse: (accept: boolean) => Promise<void>;
   onRequestDelete: () => Promise<void>;
+  isAdmin?: boolean;
 }
 
 const AgreementActions: React.FC<AgreementActionsProps> = ({
@@ -29,6 +30,7 @@ const AgreementActions: React.FC<AgreementActionsProps> = ({
   hasRequestedDelete,
   onResponse,
   onRequestDelete,
+  isAdmin = false,
 }) => {
   const navigate = useNavigate();
 
@@ -84,19 +86,33 @@ const AgreementActions: React.FC<AgreementActionsProps> = ({
         )}
       </div>
       
-      {canDelete && (
-        <Button 
-          variant="ghost" 
-          className="text-destructive hover:bg-destructive/10"
-          onClick={onRequestDelete}
-        >
-          <Trash2 className="h-4 w-4 mr-1" />
-          {hasRequestedDelete ? 'Confirm Delete' : 'Request Delete'}
-        </Button>
-      )}
+      <div className="flex items-center gap-2">
+        {isAdmin && (
+          <Button 
+            variant="destructive"
+            onClick={onRequestDelete}
+            className="flex items-center"
+          >
+            <Shield className="h-4 w-4 mr-1" />
+            <Trash2 className="h-4 w-4 mr-1" />
+            Admin Delete
+          </Button>
+        )}
+        
+        {canDelete && !isAdmin && (
+          <Button 
+            variant="ghost" 
+            className="text-destructive hover:bg-destructive/10"
+            onClick={onRequestDelete}
+          >
+            <Trash2 className="h-4 w-4 mr-1" />
+            {hasRequestedDelete ? 'Confirm Delete' : 'Request Delete'}
+          </Button>
+        )}
+      </div>
       
-      {hasRequestedDelete && (
-        <p className="text-xs text-muted-foreground">
+      {hasRequestedDelete && !isAdmin && (
+        <p className="text-xs text-muted-foreground w-full text-right">
           Waiting for other party to delete...
         </p>
       )}

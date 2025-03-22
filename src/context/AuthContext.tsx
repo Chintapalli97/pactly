@@ -1,10 +1,14 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { toast } from '@/lib/toast';
 
-type User = {
+export type UserRole = 'admin' | 'user';
+
+export type User = {
   id: string;
   email: string;
   name: string;
+  role: UserRole;
 };
 
 type AuthContextType = {
@@ -14,6 +18,7 @@ type AuthContextType = {
   signup: (email: string, password: string, name: string) => Promise<void>;
   logout: () => void;
   isAuthenticated: boolean;
+  isAdmin: boolean;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -21,6 +26,24 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 // Mock users database for demo
 const USERS_STORAGE_KEY = 'pact_pal_users';
 const CURRENT_USER_KEY = 'pact_pal_current_user';
+
+// Create admin user if it doesn't exist
+const ensureAdminExists = () => {
+  const users = JSON.parse(localStorage.getItem(USERS_STORAGE_KEY) || '[]');
+  const adminExists = users.some((user: any) => user.email === 'admin@pactpal.com');
+  
+  if (!adminExists) {
+    users.push({
+      id: 'admin-1',
+      email: 'admin@pactpal.com',
+      password: 'admin123', // In a real app, this would be hashed
+      name: 'PactPal Admin',
+      role: 'admin'
+    });
+    localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(users));
+    console.log('Created admin user: admin@pactpal.com / admin123');
+  }
+};
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
@@ -31,6 +54,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!localStorage.getItem(USERS_STORAGE_KEY)) {
       localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify([]));
     }
+    
+    // Ensure admin user exists
+    ensureAdminExists();
     
     // Check if user is already logged in
     const storedUser = localStorage.getItem(CURRENT_USER_KEY);
@@ -84,12 +110,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw new Error('User with this email already exists');
       }
       
-      // Create new user
+      // Create new user (all new users are regular users by default)
       const newUser = {
         id: crypto.randomUUID(),
         email,
         password, // In a real app, this would be hashed
-        name
+        name,
+        role: 'user' as UserRole
       };
       
       // Add to users array
@@ -116,6 +143,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     toast.info('You have been logged out');
   };
 
+  const isAdmin = user?.role === 'admin';
+
   return (
     <AuthContext.Provider value={{ 
       user, 
@@ -123,7 +152,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       login, 
       signup, 
       logout,
-      isAuthenticated: !!user 
+      isAuthenticated: !!user,
+      isAdmin 
     }}>
       {children}
     </AuthContext.Provider>

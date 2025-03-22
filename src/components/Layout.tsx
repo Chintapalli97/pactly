@@ -4,7 +4,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { useAgreements } from '@/hooks/useAgreementsContext';
 import { Button } from './ui/button';
-import { Bell, LogOut, UserCircle, PlusCircle, Home, FileText } from 'lucide-react';
+import { Bell, LogOut, UserCircle, PlusCircle, Home, FileText, Shield } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 type LayoutProps = {
@@ -12,7 +12,7 @@ type LayoutProps = {
 };
 
 const Layout: React.FC<LayoutProps> = ({ children }) => {
-  const { user, isAuthenticated, logout } = useAuth();
+  const { user, isAuthenticated, logout, isAdmin } = useAuth();
   const { hasNewNotifications, clearNotifications } = useAgreements();
   const location = useLocation();
   const navigate = useNavigate();
@@ -25,14 +25,29 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     if (!isAuthenticated && !publicRoutes.includes(location.pathname) && !isAgreementRoute) {
       navigate('/login');
     }
-  }, [isAuthenticated, location.pathname, navigate]);
+    
+    // Redirect to admin dashboard if trying to access regular dashboard as admin
+    if (isAdmin && location.pathname === '/dashboard') {
+      navigate('/admin');
+    }
+  }, [isAuthenticated, isAdmin, location.pathname, navigate]);
 
   // Navigation items
   const navItems = [
-    { label: 'Home', icon: Home, path: '/dashboard', requiresAuth: true },
+    { label: 'Home', icon: Home, path: isAdmin ? '/admin' : '/dashboard', requiresAuth: true },
     { label: 'My Agreements', icon: FileText, path: '/my-agreements', requiresAuth: true },
     { label: 'New Agreement', icon: PlusCircle, path: '/create', requiresAuth: true },
   ];
+  
+  // Admin-only items
+  const adminItems = [
+    { label: 'Admin Panel', icon: Shield, path: '/admin', requiresAuth: true, adminOnly: true },
+  ];
+  
+  // Combined items
+  const allNavItems = isAdmin 
+    ? [...navItems, ...adminItems]
+    : navItems;
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -42,11 +57,18 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             <span className="text-2xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
               PactPal
             </span>
+            {isAdmin && (
+              <span className="text-xs px-2 py-0.5 bg-orange-100 text-orange-800 rounded-full flex items-center gap-1">
+                <Shield className="h-3 w-3" />
+                Admin
+              </span>
+            )}
           </Link>
           
           <nav className="hidden md:flex items-center space-x-6">
-            {navItems.map((item) => (
-              (!item.requiresAuth || isAuthenticated) && (
+            {allNavItems.map((item) => (
+              (!item.requiresAuth || isAuthenticated) && 
+              (!item.adminOnly || isAdmin) && (
                 <Link 
                   key={item.path} 
                   to={item.path}
@@ -112,8 +134,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       {isAuthenticated && (
         <div className="md:hidden fixed bottom-0 left-0 right-0 z-10 bg-white border-t py-2 px-6 bg-opacity-90 backdrop-blur-sm">
           <div className="flex justify-around">
-            {navItems.map((item) => (
-              (!item.requiresAuth || isAuthenticated) && (
+            {allNavItems.map((item) => (
+              (!item.requiresAuth || isAuthenticated) && 
+              (!item.adminOnly || isAdmin) && (
                 <Link 
                   key={item.path} 
                   to={item.path}

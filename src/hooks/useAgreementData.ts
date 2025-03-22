@@ -4,7 +4,7 @@ import { Agreement } from '@/types/agreement';
 import { getStoredAgreements, getAgreementById as getAgreementByIdUtil } from '@/utils/agreementUtils';
 import { toast } from '@/lib/toast';
 
-export const useAgreementData = (userId: string | undefined) => {
+export const useAgreementData = (userId: string | undefined, isAdmin: boolean = false) => {
   const [agreements, setAgreements] = useState<Agreement[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -86,17 +86,30 @@ export const useAgreementData = (userId: string | undefined) => {
     return agreementFromStorage;
   }, [agreements]);
 
-  // Filter agreements by creator/recipient
-  const sentAgreements = userId 
-    ? agreements.filter(a => a.creatorId === userId)
-    : [];
+  // Filter agreements by creator/recipient if not admin
+  let sentAgreements: Agreement[] = [];
+  let receivedAgreements: Agreement[] = [];
+  let allAgreements: Agreement[] = [];
+  
+  if (isAdmin) {
+    // Admin has access to all agreements
+    allAgreements = [...agreements];
     
-  const receivedAgreements = userId 
-    ? agreements.filter(a => a.recipientId === userId)
-    : [];
+    // Still populate sent/received for filtering purposes
+    sentAgreements = userId ? agreements.filter(a => a.creatorId === userId) : [];
+    receivedAgreements = userId ? agreements.filter(a => a.recipientId === userId) : [];
+  } else {
+    // Regular users only see agreements they're involved in
+    sentAgreements = userId ? agreements.filter(a => a.creatorId === userId) : [];
+    receivedAgreements = userId ? agreements.filter(a => a.recipientId === userId) : [];
+    
+    // All agreements a regular user can access (union of sent and received)
+    allAgreements = [...sentAgreements, ...receivedAgreements];
+  }
 
   return {
-    agreements,
+    agreements: isAdmin ? agreements : [...sentAgreements, ...receivedAgreements],
+    allAgreements,
     setAgreements,
     loading,
     setLoading,
