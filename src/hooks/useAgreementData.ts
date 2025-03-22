@@ -79,11 +79,12 @@ export const useAgreementData = (userId: string | undefined, isAdmin: boolean = 
       if (!agreements.some(a => a.id === id)) {
         setAgreements(prev => [...prev, agreementFromStorage]);
       }
+      return agreementFromStorage;
     } else {
       console.log(`No agreement found with ID: ${id}`);
     }
     
-    return agreementFromStorage;
+    return undefined;
   }, [agreements]);
 
   // Filter agreements by creator/recipient if not admin

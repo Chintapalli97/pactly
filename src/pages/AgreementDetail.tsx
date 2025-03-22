@@ -54,24 +54,61 @@ const AgreementDetail = () => {
           console.log('Agreement not found in context, trying localStorage...');
           foundAgreement = getAgreementByIdUtil(id);
           
-          // If found in localStorage but not in context, refresh the context
+          // If found in localStorage but not in context, add it to the context
           if (foundAgreement) {
             console.log('Agreement found in localStorage but not in context, ensuring it is in storage');
             ensureAgreementInStorage(foundAgreement);
             
+            // Set the agreement in the local state
+            setAgreement(foundAgreement);
+            document.title = `Agreement | PactPal`;
+            
             // Trigger a storage event to refresh the agreements in other tabs
             const event = new Event('agreementsUpdated');
             document.dispatchEvent(event);
+            
+            // Log successful access if user is logged in
+            if (user) {
+              logAccessAttempt({
+                userId: user.id,
+                userName: user.name,
+                action: 'view',
+                agreementId: id,
+                timestamp: new Date().toISOString(),
+                success: true,
+              });
+            }
+            
+            setLocalLoading(false);
+            return;
           }
         }
         
         if (foundAgreement) {
           console.log('Agreement found:', foundAgreement);
           
-          // Check access rights if user is logged in and not an admin
-          if (user && !isAdmin) {
+          // For pending agreements, anyone can view them (even not logged in users)
+          if (foundAgreement.status === 'pending' || isAdmin) {
+            setAgreement(foundAgreement);
+            document.title = `Agreement | PactPal`;
+            
+            // Log successful access if user is logged in
+            if (user) {
+              logAccessAttempt({
+                userId: user.id,
+                userName: user.name,
+                action: 'view',
+                agreementId: id,
+                timestamp: new Date().toISOString(),
+                success: true,
+                details: isAdmin ? 'Admin access' : undefined,
+              });
+            }
+          }
+          // For non-pending agreements, check access rights if user is logged in
+          else if (user && !isAdmin) {
             const userHasAccess = hasAccess(id);
-            if (!userHasAccess && foundAgreement.status !== 'pending') {
+            if (!userHasAccess) {
               console.log('Access denied: User does not have permission to view this agreement');
               setAccessDenied(true);
               
@@ -92,24 +129,6 @@ const AgreementDetail = () => {
               document.title = `Agreement | PactPal`;
               
               // Log successful access
-              if (user) {
-                logAccessAttempt({
-                  userId: user.id,
-                  userName: user.name,
-                  action: 'view',
-                  agreementId: id,
-                  timestamp: new Date().toISOString(),
-                  success: true,
-                });
-              }
-            }
-          } else {
-            // Admin or non-logged in user (non-logged in users can view pending agreements)
-            setAgreement(foundAgreement);
-            document.title = `Agreement | PactPal`;
-            
-            // Log successful access for admin
-            if (user && isAdmin) {
               logAccessAttempt({
                 userId: user.id,
                 userName: user.name,
@@ -117,16 +136,17 @@ const AgreementDetail = () => {
                 agreementId: id,
                 timestamp: new Date().toISOString(),
                 success: true,
-                details: 'Admin access',
               });
             }
+          } else {
+            // Not admin, not logged in, and agreement is not pending
+            setAgreement(foundAgreement);
           }
         } else {
           console.log('Agreement not found with ID:', id);
           setNotFound(true);
-          toast.error("Agreement not found. It may have been deleted or doesn't exist.");
           
-          // Log failed access attempt
+          // Log failed access attempt if user is logged in
           if (user) {
             logAccessAttempt({
               userId: user.id,
@@ -144,7 +164,7 @@ const AgreementDetail = () => {
         setNotFound(true);
         toast.error("Error loading agreement. Please try again.");
         
-        // Log error
+        // Log error if user is logged in
         if (user) {
           logAccessAttempt({
             userId: user.id,

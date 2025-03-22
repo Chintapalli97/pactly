@@ -8,6 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import Layout from '@/components/Layout';
 import { Link, PencilIcon, Send, ArrowLeft } from 'lucide-react';
 import { toast } from '@/lib/toast';
+import { getAgreementById as getAgreementByIdUtil, ensureAgreementInStorage } from '@/utils/agreementUtils';
 
 const CreateAgreement = () => {
   const [message, setMessage] = useState('');
@@ -34,9 +35,17 @@ const CreateAgreement = () => {
         throw new Error('Agreement creation failed');
       }
       
+      // Ensure the agreement is properly saved to storage
+      ensureAgreementInStorage(createdAgreement);
+      
       setAgreementId(id);
       const url = `${window.location.origin}/agreements/${id}`;
       setShareLink(url);
+      
+      // Trigger a storage event to ensure other components update
+      const event = new Event('agreementsUpdated');
+      document.dispatchEvent(event);
+      
     } catch (error) {
       // Error already handled in context
     } finally {
@@ -139,7 +148,7 @@ const CreateAgreement = () => {
               <Button 
                 variant="outline" 
                 className="w-full" 
-                onClick={() => navigate(`/agreements/${agreementId}`)}
+                onClick={handleViewAgreement}
               >
                 View Agreement
               </Button>
