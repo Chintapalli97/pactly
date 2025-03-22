@@ -5,7 +5,7 @@ import { useAgreements } from '@/context/AgreementContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import AgreementCard from '@/components/AgreementCard';
 import Layout from '@/components/Layout';
-import { Agreement } from '@/context/AgreementContext';
+import { Agreement } from '@/types/agreement';
 import { Inbox, Send, Loader2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';

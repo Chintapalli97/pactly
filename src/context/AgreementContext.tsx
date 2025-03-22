@@ -2,7 +2,7 @@
 import React, { createContext, useState, useEffect } from 'react';
 import { useAuth } from './AuthContext';
 import { toast } from '@/lib/toast';
-import { Agreement } from '@/types/agreement';
+import { Agreement, AgreementStatus } from '@/types/agreement';
 import { 
   getStoredAgreements, 
   saveAgreements, 
@@ -93,7 +93,7 @@ export const AgreementProvider: React.FC<{ children: React.ReactNode }> = ({ chi
             ...agreement,
             recipientId: user.id,
             recipientName: user.name,
-            status: accept ? 'accepted' : 'declined'
+            status: accept ? 'accepted' as AgreementStatus : 'declined' as AgreementStatus
           };
         }
         return agreement;
