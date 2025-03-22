@@ -11,6 +11,15 @@ type LayoutProps = {
   children: React.ReactNode;
 };
 
+// Update the type definition to include the adminOnly property
+type NavItem = {
+  label: string;
+  icon: React.ForwardRefExoticComponent<any>;
+  path: string;
+  requiresAuth: boolean;
+  adminOnly?: boolean; // Add the adminOnly property as optional
+};
+
 const Layout: React.FC<LayoutProps> = ({ children }) => {
   const { user, isAuthenticated, logout, isAdmin } = useAuth();
   const { hasNewNotifications, clearNotifications } = useAgreements();
@@ -33,14 +42,14 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   }, [isAuthenticated, isAdmin, location.pathname, navigate]);
 
   // Navigation items
-  const navItems = [
+  const navItems: NavItem[] = [
     { label: 'Home', icon: Home, path: isAdmin ? '/admin' : '/dashboard', requiresAuth: true },
     { label: 'My Agreements', icon: FileText, path: '/my-agreements', requiresAuth: true },
     { label: 'New Agreement', icon: PlusCircle, path: '/create', requiresAuth: true },
   ];
   
   // Admin-only items
-  const adminItems = [
+  const adminItems: NavItem[] = [
     { label: 'Admin Panel', icon: Shield, path: '/admin', requiresAuth: true, adminOnly: true },
   ];
   
