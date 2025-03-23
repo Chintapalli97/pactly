@@ -6,6 +6,10 @@ export * from './notificationUtils';
 export * from './accessLogUtils';
 export * from './helpers';
 
+// Import the specific constants and functions we need
+import { AGREEMENTS_KEY } from './constants';
+import { getStoredAgreements } from './agreementStorage';
+
 // Add a utility function to simulate API delay
 export const simulateApiDelay = async (): Promise<void> => {
   const delayTime = 500 + Math.random() * 1000; // Random delay between 500ms and 1500ms
@@ -21,8 +25,6 @@ export type { AccessLogEntry } from './accessLogUtils';
 // Function to clear all agreements (admin only)
 export const clearAllAgreements = (): void => {
   try {
-    // Import the constant explicitly to avoid the error
-    import { AGREEMENTS_KEY } from './constants';
     localStorage.setItem(AGREEMENTS_KEY, JSON.stringify([]));
     console.log('All agreements cleared');
     
@@ -37,10 +39,6 @@ export const clearAllAgreements = (): void => {
 // Function to restore a deleted agreement (admin only)
 export const restoreAgreement = (agreementId: string): boolean => {
   try {
-    // Import the needed functions and constants
-    import { AGREEMENTS_KEY } from './constants';
-    import { getStoredAgreements } from './agreementStorage';
-    
     const agreements = getStoredAgreements();
     const agreementIndex = agreements.findIndex(agreement => agreement.id === agreementId);
     
