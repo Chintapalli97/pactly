@@ -51,7 +51,10 @@ const CreateAgreement = () => {
       }
       
       setAgreementId(id);
-      const url = `${window.location.origin}/agreements/${id}`;
+      
+      // Always generate production URL for sharing
+      const productionUrl = 'https://playful-pact-pal.vercel.app';
+      const url = `${productionUrl}/agreements/${id}`;
       setShareLink(url);
       
       // Trigger a storage event to ensure other components update

@@ -8,6 +8,7 @@ import {
   getAgreementById as getAgreementByIdUtil,
   ensureAgreementInStorage
 } from '@/utils/agreementUtils';
+import { fetchAgreementById } from '@/utils/supabaseAgreementUtils';
 
 export const useAgreementLoader = (id: string | undefined) => {
   const { user } = useAuth();
@@ -17,7 +18,7 @@ export const useAgreementLoader = (id: string | undefined) => {
   const [accessDenied, setAccessDenied] = useState(false);
   const [localLoading, setLocalLoading] = useState(true);
 
-  const loadAgreement = () => {
+  const loadAgreement = async () => {
     if (!id) {
       console.log("No agreement ID provided in URL");
       setNotFound(true);
@@ -26,6 +27,7 @@ export const useAgreementLoader = (id: string | undefined) => {
     }
 
     console.log("Loading agreement with ID:", id);
+    setLocalLoading(true);
 
     try {
       // First try from context
@@ -35,23 +37,12 @@ export const useAgreementLoader = (id: string | undefined) => {
       if (!foundAgreement) {
         console.log('Agreement not found in context, trying localStorage...');
         foundAgreement = getAgreementByIdUtil(id);
-        
-        // If found in localStorage but not in context, add it to the context
-        if (foundAgreement) {
-          console.log('Agreement found in localStorage but not in context, ensuring it is in storage');
-          ensureAgreementInStorage(foundAgreement);
-          
-          // Set the agreement in the local state
-          setAgreement(foundAgreement);
-          document.title = `Agreement | PactPal`;
-          
-          // Trigger a storage event to refresh the agreements in other tabs
-          const event = new Event('agreementsUpdated');
-          document.dispatchEvent(event);
-          
-          setLocalLoading(false);
-          return;
-        }
+      }
+
+      // If still not found, try from Supabase
+      if (!foundAgreement) {
+        console.log('Agreement not found in localStorage, trying Supabase...');
+        foundAgreement = await fetchAgreementById(id);
       }
       
       if (foundAgreement) {
@@ -61,6 +52,16 @@ export const useAgreementLoader = (id: string | undefined) => {
         // Also allow viewing of any accepted agreement without login requirement
         setAgreement(foundAgreement);
         document.title = `Agreement | PactPal`;
+        
+        // If found in Supabase but not in localStorage, add it to the context
+        if (!getAgreementByIdUtil(id)) {
+          console.log('Agreement found in Supabase but not in localStorage, ensuring it is in storage');
+          ensureAgreementInStorage(foundAgreement);
+          
+          // Trigger a storage event to refresh the agreements in other tabs
+          const event = new Event('agreementsUpdated');
+          document.dispatchEvent(event);
+        }
       } else {
         console.log('Agreement not found with ID:', id);
         setNotFound(true);

@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useAgreements } from '@/hooks/useAgreementsContext';
 import { useAgreementValidation } from './useAgreementValidation';
 import { Agreement } from '@/types/agreement';
+import { updateAgreementInSupabase } from '@/utils/supabaseAgreementUtils';
 
 export const useAgreementActions = (agreement: Agreement | null, setAgreement: React.Dispatch<React.SetStateAction<Agreement | null>>) => {
   const { respondToAgreement, requestDeleteAgreement, adminDeleteAgreement, getAgreementById } = useAgreements();
@@ -14,12 +15,19 @@ export const useAgreementActions = (agreement: Agreement | null, setAgreement: R
     
     try {
       setIsResponding(true);
+      
+      // Call the respondToAgreement function from context
       await respondToAgreement(agreement.id, accept);
+      
       // Update the local agreement state after response
       const updatedAgreement = getAgreementById(agreement.id);
       if (updatedAgreement) {
         setAgreement(updatedAgreement);
+        
+        // Also update in Supabase
+        await updateAgreementInSupabase(updatedAgreement);
       }
+      
       logAccess('respond', true, undefined, accept ? 'accepted' : 'declined');
     } catch (error) {
       console.error("Error responding to agreement:", error);
@@ -44,6 +52,10 @@ export const useAgreementActions = (agreement: Agreement | null, setAgreement: R
         const updatedAgreement = getAgreementById(agreement.id);
         if (updatedAgreement) {
           setAgreement(updatedAgreement);
+          
+          // Also update in Supabase
+          await updateAgreementInSupabase(updatedAgreement);
+          
           logAccess('requestDelete', true);
           return false; // No navigation needed
         } else {

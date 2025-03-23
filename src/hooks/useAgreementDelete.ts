@@ -9,6 +9,7 @@ import {
   addNotificationForUser,
   logAccessAttempt
 } from '@/utils/agreementUtils';
+import { updateAgreementInSupabase, softDeleteAgreementInSupabase, withApiDelay } from '@/utils/supabaseAgreementUtils';
 
 export const useAgreementDelete = (
   agreements: Agreement[],
@@ -56,6 +57,10 @@ export const useAgreementDelete = (
       
       // If the agreement is pending and the user is the creator or an admin, they can delete it immediately
       if ((agreement.status === 'pending' && isCreator) || isAdmin) {
+        // Soft delete in Supabase first
+        await withApiDelay(() => softDeleteAgreementInSupabase(id));
+        
+        // Then remove from local state and storage
         updatedAgreements = updatedAgreements.filter(a => a.id !== id);
         toast.success('Agreement deleted!');
         
@@ -74,6 +79,9 @@ export const useAgreementDelete = (
         if (!agreement.deleteRequestedBy.includes(user.id)) {
           agreement.deleteRequestedBy.push(user.id);
           
+          // Update the agreement in Supabase
+          await withApiDelay(() => updateAgreementInSupabase(agreement));
+          
           // Notify the other user about the delete request
           const otherUserId = user.id === agreement.creatorId ? 
             agreement.recipientId : agreement.creatorId;
@@ -82,6 +90,10 @@ export const useAgreementDelete = (
           }
           
           if (agreement.deleteRequestedBy.length === 2) {
+            // If both parties requested deletion, soft delete in Supabase
+            await withApiDelay(() => softDeleteAgreementInSupabase(id));
+            
+            // Then remove from local state and storage
             updatedAgreements = updatedAgreements.filter(a => a.id !== id);
             toast.success('Agreement deleted!');
             
@@ -159,6 +171,10 @@ export const useAgreementDelete = (
     try {
       await simulateApiDelay();
       
+      // Soft delete in Supabase first
+      await withApiDelay(() => softDeleteAgreementInSupabase(id));
+      
+      // Then update local state and storage
       const updatedAgreements = agreements.filter(a => a.id !== id);
       
       if (updatedAgreements.length === agreements.length) {

@@ -9,6 +9,45 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      agreements: {
+        Row: {
+          created_at: string
+          creator_id: string | null
+          creator_name: string | null
+          delete_requested_by: string[] | null
+          id: string
+          is_deleted: boolean | null
+          message: string
+          recipient_id: string | null
+          recipient_name: string | null
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          creator_id?: string | null
+          creator_name?: string | null
+          delete_requested_by?: string[] | null
+          id?: string
+          is_deleted?: boolean | null
+          message: string
+          recipient_id?: string | null
+          recipient_name?: string | null
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          creator_id?: string | null
+          creator_name?: string | null
+          delete_requested_by?: string[] | null
+          id?: string
+          is_deleted?: boolean | null
+          message?: string
+          recipient_id?: string | null
+          recipient_name?: string | null
+          status?: string
+        }
+        Relationships: []
+      }
       pactpal: {
         Row: {
           created_at: string

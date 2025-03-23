@@ -9,6 +9,7 @@ import {
   addNotificationForUser,
   logAccessAttempt
 } from '@/utils/agreementUtils';
+import { updateAgreementInSupabase, withApiDelay } from '@/utils/supabaseAgreementUtils';
 
 export const useAgreementRespond = (
   agreements: Agreement[],
@@ -50,26 +51,36 @@ export const useAgreementRespond = (
         throw new Error('You are not authorized to respond to this agreement');
       }
       
-      const updatedAgreements = agreements.map(agreement => {
-        if (agreement.id === id) {
+      let updatedAgreement: Agreement | undefined;
+      
+      const updatedAgreements = agreements.map(a => {
+        if (a.id === id) {
           // Notify the creator of the response
-          addNotificationForUser(agreement.creatorId);
+          addNotificationForUser(a.creatorId);
           
           // Ensure the status is properly typed as AgreementStatus
           const newStatus: AgreementStatus = accept ? 'accepted' : 'declined';
           
-          return {
-            ...agreement,
+          updatedAgreement = {
+            ...a,
             recipientId: user.id,
             recipientName: user.name,
             status: newStatus
           };
+          
+          return updatedAgreement;
         }
-        return agreement;
+        return a;
       });
       
+      // Save to local storage first
       saveAgreements(updatedAgreements);
       setAgreements(updatedAgreements);
+      
+      // Then save to Supabase
+      if (updatedAgreement) {
+        await withApiDelay(() => updateAgreementInSupabase(updatedAgreement!));
+      }
       
       // Log successful response
       logAccessAttempt({
