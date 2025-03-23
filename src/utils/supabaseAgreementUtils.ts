@@ -1,5 +1,5 @@
 
-import { supabase } from '@/integrations/supabase/client';
+import supabase from './supabase';
 import { Agreement, AgreementDB, mapDBAgreementToAgreement, mapAgreementToDBFormat } from '@/types/agreement';
 import { ensureAgreementInStorage } from './agreementStorage';
 import { simulateApiDelay } from './agreementUtils';

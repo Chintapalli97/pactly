@@ -9,7 +9,8 @@ import {
   logAccessAttempt,
   getStoredAgreements
 } from '@/utils/agreementUtils';
-import { createAgreementInSupabase, withApiDelay } from '@/utils/supabaseAgreementUtils';
+import { createAgreementInSupabase } from '@/utils/supabaseAgreementUtils';
+import supabase from '@/utils/supabase';
 
 export const useAgreementCreate = (
   agreements: Agreement[],
@@ -42,7 +43,7 @@ export const useAgreementCreate = (
       };
       
       // First save to Supabase
-      const supabaseId = await withApiDelay(() => createAgreementInSupabase(newAgreement));
+      const supabaseId = await createAgreementInSupabase(newAgreement);
       
       // If Supabase save failed, throw an error
       if (!supabaseId) {

@@ -2,8 +2,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Agreement } from '@/types/agreement';
 import { getStoredAgreements, getAgreementById as getAgreementByIdUtil } from '@/utils/agreementStorage';
-import { fetchUserAgreements } from '@/utils/supabaseAgreementUtils';
+import { fetchUserAgreements, fetchAgreementById } from '@/utils/supabaseAgreementUtils';
 import { toast } from '@/lib/toast';
+import supabase from '@/utils/supabase';
 
 export const useAgreementData = (userId: string | undefined, isAdmin: boolean = false) => {
   const [agreements, setAgreements] = useState<Agreement[]>([]);
@@ -54,6 +55,23 @@ export const useAgreementData = (userId: string | undefined, isAdmin: boolean = 
   useEffect(() => {
     loadAgreements();
     
+    // Set up Supabase realtime subscription for agreements
+    const channel = supabase
+      .channel('schema-db-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'agreements'
+        },
+        (payload) => {
+          console.log('Realtime update received:', payload);
+          loadAgreements();
+        }
+      )
+      .subscribe();
+    
     // Set up storage event listener to catch changes from other tabs
     const handleStorageChange = (event: StorageEvent) => {
       if (event.key === 'pact_pal_agreements') {
@@ -71,17 +89,14 @@ export const useAgreementData = (userId: string | undefined, isAdmin: boolean = 
     window.addEventListener('storage', handleStorageChange);
     document.addEventListener('agreementsUpdated', handleCustomEvent);
     
-    // Set up an interval to refresh agreements periodically
-    const intervalId = setInterval(loadAgreements, 60000); // Refresh every minute
-    
     return () => {
       window.removeEventListener('storage', handleStorageChange);
       document.removeEventListener('agreementsUpdated', handleCustomEvent);
-      clearInterval(intervalId);
+      supabase.removeChannel(channel);
     };
   }, [loadAgreements]);
 
-  const getAgreementById = useCallback((id: string): Agreement | undefined => {
+  const getAgreementById = useCallback(async (id: string): Promise<Agreement | undefined> => {
     if (!id) {
       console.log("No ID provided to getAgreementById");
       return undefined;
@@ -96,10 +111,24 @@ export const useAgreementData = (userId: string | undefined, isAdmin: boolean = 
       console.log("Agreement found in state:", agreementInState);
       return agreementInState;
     } else {
-      console.log("Agreement not found in state, checking localStorage...");
+      console.log("Agreement not found in state, checking Supabase...");
     }
     
-    // If not found in state, try to find it in localStorage directly
+    // If not found in state, try to find it in Supabase
+    const agreementFromSupabase = await fetchAgreementById(id);
+    
+    if (agreementFromSupabase) {
+      console.log("Agreement found in Supabase:", agreementFromSupabase);
+      // Update the state with this agreement if it's not already there
+      if (!agreements.some(a => a.id === id)) {
+        setAgreements(prev => [...prev, agreementFromSupabase]);
+      }
+      return agreementFromSupabase;
+    } else {
+      console.log("Agreement not found in Supabase, checking localStorage...");
+    }
+    
+    // If not found in Supabase, try to find it in localStorage directly
     const agreementFromStorage = getAgreementByIdUtil(id);
     
     if (agreementFromStorage) {
@@ -113,7 +142,6 @@ export const useAgreementData = (userId: string | undefined, isAdmin: boolean = 
       console.log(`No agreement found with ID: ${id}`);
     }
     
-    // Note: Supabase fetching is now handled in the useAgreementLoader hook
     return undefined;
   }, [agreements]);
 
