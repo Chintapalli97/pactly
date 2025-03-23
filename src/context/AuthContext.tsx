@@ -1,4 +1,6 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/lib/toast';
 
 export type UserRole = 'admin' | 'user';
@@ -57,19 +59,61 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Ensure admin user exists
     ensureAdminExists();
     
-    // Check if user is already logged in
+    // Set up the Supabase auth state listener FIRST
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log('Auth state changed:', event, session ? 'User authenticated' : 'No session');
+      
+      if (session) {
+        // If we have a Supabase session, try to match with local user
+        const localUsers = JSON.parse(localStorage.getItem(USERS_STORAGE_KEY) || '[]');
+        const matchedUser = localUsers.find((u: any) => u.email === session.user.email);
+        
+        if (matchedUser) {
+          const { password: _, ...userWithoutPassword } = matchedUser;
+          setUser(userWithoutPassword);
+          localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(userWithoutPassword));
+        }
+      }
+    });
+    
+    // Check for existing user in localStorage
     const storedUser = localStorage.getItem(CURRENT_USER_KEY);
     if (storedUser) {
       setUser(JSON.parse(storedUser));
+      
+      // Verify existing session with Supabase
+      supabase.auth.getSession().then(({ data, error }) => {
+        if (error) {
+          console.error('Error getting session:', error);
+        }
+        console.log('Current Supabase session status:', data.session ? 'Active' : 'None');
+      });
     }
+    
     setLoading(false);
+    
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
   const login = async (email: string, password: string) => {
     setLoading(true);
     
     try {
-      // Simulate API call delay
+      // First, try to authenticate with Supabase
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
+      
+      if (authError) {
+        console.error('Supabase auth error:', authError);
+      } else {
+        console.log('Supabase auth successful:', authData.session ? 'Session created' : 'No session');
+      }
+      
+      // Simulate API call delay for the local auth
       await new Promise(resolve => setTimeout(resolve, 800));
       
       const users = JSON.parse(localStorage.getItem(USERS_STORAGE_KEY) || '[]');
@@ -99,7 +143,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setLoading(true);
     
     try {
-      // Simulate API call delay
+      // First, try to sign up with Supabase
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            name,
+            role: 'user'
+          }
+        }
+      });
+      
+      if (authError) {
+        console.error('Supabase signup error:', authError);
+      } else {
+        console.log('Supabase signup successful:', authData.session ? 'Session created' : 'No session');
+      }
+      
+      // Simulate API call delay for the local auth
       await new Promise(resolve => setTimeout(resolve, 800));
       
       const users = JSON.parse(localStorage.getItem(USERS_STORAGE_KEY) || '[]');
@@ -137,6 +199,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const logout = () => {
+    // Sign out from Supabase
+    supabase.auth.signOut().then(({ error }) => {
+      if (error) {
+        console.error('Error signing out from Supabase:', error);
+      } else {
+        console.log('Signed out from Supabase successfully');
+      }
+    });
+    
+    // Clear local storage and state
     setUser(null);
     localStorage.removeItem(CURRENT_USER_KEY);
     toast.info('You have been logged out');

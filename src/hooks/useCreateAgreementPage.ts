@@ -1,13 +1,17 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from '@/lib/toast';
 import { verifyAgreementExists } from '@/utils/agreementStorage';
 import { useAgreementCreation } from '@/hooks/useAgreementCreation';
+import { supabase } from '@/integrations/supabase/client';
 
 export const useCreateAgreementPage = () => {
   const [message, setMessage] = useState('');
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const { user } = useAuth();
+  const navigate = useNavigate();
   const { 
     createAgreement, 
     loading, 
@@ -17,6 +21,35 @@ export const useCreateAgreementPage = () => {
     clearState 
   } = useAgreementCreation();
 
+  // Check authentication status when component mounts
+  useEffect(() => {
+    const checkAuthStatus = async () => {
+      setIsCheckingAuth(true);
+      
+      try {
+        const { data, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error('Error checking auth status:', error);
+        }
+        
+        console.log('Auth check completed:', data.session ? 'Authenticated' : 'Not authenticated');
+        
+        if (!data.session && !user) {
+          console.log('No active session and no user, redirecting to login');
+          toast.error('You must be logged in to create an agreement');
+          navigate('/login');
+        }
+      } catch (err) {
+        console.error('Error during auth check:', err);
+      } finally {
+        setIsCheckingAuth(false);
+      }
+    };
+    
+    checkAuthStatus();
+  }, [user, navigate]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -24,8 +57,12 @@ export const useCreateAgreementPage = () => {
       return;
     }
     
-    if (!user) {
+    // Double-check authentication before proceeding
+    const { data: sessionData } = await supabase.auth.getSession();
+    
+    if (!user && !sessionData.session) {
       toast.error('You must be logged in to create an agreement');
+      navigate('/login');
       return;
     }
     
@@ -51,18 +88,6 @@ export const useCreateAgreementPage = () => {
     }
   };
 
-  const copyToClipboard = () => {
-    try {
-      if (shareLink) {
-        navigator.clipboard.writeText(shareLink);
-        toast.success('Link copied to clipboard');
-      }
-    } catch (error) {
-      console.error('Failed to copy link:', error);
-      toast.error('Failed to copy link to clipboard');
-    }
-  };
-
   const handleCreateAnother = () => {
     setMessage('');
     clearState();
@@ -72,12 +97,11 @@ export const useCreateAgreementPage = () => {
     message,
     setMessage,
     handleSubmit,
-    loading,
+    loading: loading || isCheckingAuth,
     error,
     agreementId,
     shareLink,
     clearState,
-    handleCreateAnother,
-    copyToClipboard
+    handleCreateAnother
   };
 };

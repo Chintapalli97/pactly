@@ -16,10 +16,27 @@ export const useAgreementCreation = () => {
 
     try {
       console.log('Starting agreement creation process');
-      const { data: userData, error: authError } = await supabase.auth.getUser();
       
-      if (authError || !userData.user) {
-        console.error('Authentication error:', authError);
+      // First ensure we have a valid session
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError) {
+        console.error('Session retrieval error:', sessionError);
+        throw new Error('Authentication error. Please try logging in again.');
+      }
+      
+      if (!sessionData.session) {
+        console.error('No active session found');
+        throw new Error('You must be logged in to create an agreement');
+      }
+      
+      console.log('Session found:', sessionData.session ? 'Valid' : 'Invalid');
+      
+      // Get the current user
+      const { data: userData, error: userError } = await supabase.auth.getUser();
+      
+      if (userError || !userData.user) {
+        console.error('Authentication error:', userError);
         throw new Error('You must be logged in to create an agreement');
       }
 

@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import Layout from '@/components/Layout';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Loader2 } from 'lucide-react';
 import CreateAgreementForm from '@/components/agreement/CreateAgreementForm';
 import CreateAgreementSuccess from '@/components/agreement/CreateAgreementSuccess';
 import { useCreateAgreementPage } from '@/hooks/useCreateAgreementPage';
@@ -45,7 +45,12 @@ const CreateAgreement = () => {
         </div>
         
         <Card className={`glass-card p-6 ${!agreementId ? 'animate-scale-in delay-200' : 'animate-scale-in'}`}>
-          {!agreementId ? (
+          {loading && !agreementId ? (
+            <div className="flex flex-col items-center justify-center py-8">
+              <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
+              <p className="text-muted-foreground">Verifying authentication...</p>
+            </div>
+          ) : !agreementId ? (
             <CreateAgreementForm
               message={message}
               setMessage={setMessage}
