@@ -17,7 +17,7 @@ export type Agreement = {
 // Type for database operations
 export type AgreementDB = {
   id: string;
-  message: string;
+  message: string; // Required field
   created_at: string;
   creator_id: string | null;
   creator_name: string | null;
@@ -45,10 +45,11 @@ export function mapDBAgreementToAgreement(dbAgreement: AgreementDB): Agreement {
 }
 
 // Convert from application format to database format
-export function mapAgreementToDBFormat(agreement: Agreement): Partial<AgreementDB> {
+export function mapAgreementToDBFormat(agreement: Agreement): AgreementDB {
   return {
     id: agreement.id,
-    message: agreement.message,
+    message: agreement.message, // Ensuring this is always passed
+    created_at: agreement.createdAt,
     creator_id: agreement.creatorId || null,
     creator_name: agreement.creatorName || null,
     recipient_id: agreement.recipientId || null,

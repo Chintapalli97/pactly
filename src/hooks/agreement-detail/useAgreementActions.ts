@@ -41,7 +41,7 @@ export const useAgreementActions = (agreement: Agreement | null, setAgreement: R
     if (!agreement?.id) return false;
     
     try {
-      const isAdmin = agreement.recipientId !== 'admin@example.com';
+      const isAdmin = agreement.recipientId === 'admin@example.com';
       if (isAdmin) {
         await adminDeleteAgreement(agreement.id);
         logAccess('delete', true, undefined, 'Admin deletion');

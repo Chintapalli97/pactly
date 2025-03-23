@@ -44,7 +44,7 @@ export async function createAgreementInSupabase(agreement: Agreement): Promise<s
   try {
     console.log('Creating new agreement in Supabase:', agreement);
     
-    // Convert the agreement to the DB format
+    // Convert the agreement to the DB format with required fields
     const dbAgreement = mapAgreementToDBFormat(agreement);
     
     const { data, error } = await supabase
@@ -71,7 +71,7 @@ export async function updateAgreementInSupabase(agreement: Agreement): Promise<b
   try {
     console.log('Updating agreement in Supabase:', agreement);
     
-    // Convert the agreement to the DB format
+    // Convert the agreement to the DB format with all required fields
     const dbAgreement = mapAgreementToDBFormat(agreement);
     
     const { error } = await supabase
