@@ -31,11 +31,11 @@ export const getStoredAgreements = (): Agreement[] => {
   }
 };
 
-export const saveAgreements = (agreements: Agreement[]): void => {
+export const saveAgreements = (agreements: Agreement[]): boolean => {
   try {
     if (!Array.isArray(agreements)) {
       console.error("Cannot save agreements: not an array", agreements);
-      return;
+      return false;
     }
     
     console.log(`Saving ${agreements.length} agreements to storage`);
@@ -57,9 +57,12 @@ export const saveAgreements = (agreements: Agreement[]): void => {
     } catch (e) {
       console.warn("Could not dispatch storage event:", e);
     }
+    
+    return true; // Indicate successful save
   } catch (error) {
     console.error('Error saving agreements:', error);
     toast.error('Failed to save agreement data');
+    return false; // Indicate failed save
   }
 };
 
@@ -103,10 +106,10 @@ export const verifyAgreementExists = (id: string): boolean => {
 };
 
 // Directly add an agreement to storage if it doesn't exist
-export const ensureAgreementInStorage = (agreement: Agreement): void => {
+export const ensureAgreementInStorage = (agreement: Agreement): boolean => {
   if (!agreement || !agreement.id) {
     console.error("Invalid agreement provided to ensureAgreementInStorage");
-    return;
+    return false;
   }
   
   try {
@@ -114,12 +117,14 @@ export const ensureAgreementInStorage = (agreement: Agreement): void => {
     if (!agreements.some(a => a.id === agreement.id)) {
       console.log(`Adding agreement ${agreement.id} to storage`);
       agreements.push(agreement);
-      saveAgreements(agreements);
+      return saveAgreements(agreements);
     } else {
       console.log(`Agreement ${agreement.id} already exists in storage`);
+      return true;
     }
   } catch (error) {
     console.error("Error ensuring agreement in storage:", error);
+    return false;
   }
 };
 

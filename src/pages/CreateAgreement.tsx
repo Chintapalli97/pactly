@@ -10,7 +10,8 @@ import { Link, PencilIcon, Send, ArrowLeft } from 'lucide-react';
 import { toast } from '@/lib/toast';
 import { 
   getAgreementById as getAgreementByIdUtil, 
-  ensureAgreementInStorage 
+  ensureAgreementInStorage,
+  verifyAgreementExists
 } from '@/utils/agreementStorage';
 
 const CreateAgreement = () => {
@@ -32,14 +33,22 @@ const CreateAgreement = () => {
       setIsSubmitting(true);
       const id = await createAgreement(message);
       
+      // Double check that the agreement was created and exists
+      if (!verifyAgreementExists(id)) {
+        throw new Error('Agreement creation failed: Agreement not found after creation');
+      }
+      
       // Verify that the agreement was created
       const createdAgreement = getAgreementById(id);
       if (!createdAgreement) {
-        throw new Error('Agreement creation failed');
+        const storedAgreement = getAgreementByIdUtil(id);
+        if (!storedAgreement) {
+          throw new Error('Agreement creation failed: Agreement not found in storage');
+        }
+        
+        // Ensure the agreement is in the context if found in storage
+        ensureAgreementInStorage(storedAgreement);
       }
-      
-      // Ensure the agreement is properly saved to storage
-      ensureAgreementInStorage(createdAgreement);
       
       setAgreementId(id);
       const url = `${window.location.origin}/agreements/${id}`;
@@ -49,8 +58,12 @@ const CreateAgreement = () => {
       const event = new Event('agreementsUpdated');
       document.dispatchEvent(event);
       
+      console.log(`Agreement created successfully with ID: ${id}`);
+      console.log(`Share link: ${url}`);
+      
     } catch (error) {
-      // Error already handled in context
+      console.error("Error in handleSubmit:", error);
+      toast.error(error instanceof Error ? error.message : 'Failed to create agreement');
     } finally {
       setIsSubmitting(false);
     }

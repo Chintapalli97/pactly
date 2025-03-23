@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useAgreements } from '@/hooks/useAgreementsContext';
@@ -73,59 +72,21 @@ export const useAgreementDetail = (id: string | undefined) => {
           console.log('Agreement found:', foundAgreement);
           
           // For pending agreements, anyone can view them (even not logged in users)
-          if (foundAgreement.status === 'pending' || isAdmin) {
-            setAgreement(foundAgreement);
-            document.title = `Agreement | PactPal`;
-            
-            // Log successful access if user is logged in
-            if (user) {
-              logAccessAttempt({
-                userId: user.id,
-                userName: user.name,
-                action: 'view',
-                agreementId: id,
-                timestamp: new Date().toISOString(),
-                success: true,
-                details: isAdmin ? 'Admin access' : undefined,
-              });
-            }
-          }
-          // For non-pending agreements, check access rights if user is logged in
-          else if (user && !isAdmin) {
-            const userHasAccess = hasAccess(id);
-            if (!userHasAccess) {
-              console.log('Access denied: User does not have permission to view this agreement');
-              setAccessDenied(true);
-              
-              // Log access attempt
-              logAccessAttempt({
-                userId: user.id,
-                userName: user.name,
-                action: 'view',
-                agreementId: id,
-                timestamp: new Date().toISOString(),
-                success: false,
-                error: 'Access denied',
-              });
-              
-              toast.error("You don't have permission to view this agreement");
-            } else {
-              setAgreement(foundAgreement);
-              document.title = `Agreement | PactPal`;
-              
-              // Log successful access
-              logAccessAttempt({
-                userId: user.id,
-                userName: user.name,
-                action: 'view',
-                agreementId: id,
-                timestamp: new Date().toISOString(),
-                success: true,
-              });
-            }
-          } else {
-            // Not admin, not logged in, and agreement is not pending
-            setAgreement(foundAgreement);
+          // Also allow viewing of any accepted agreement without login requirement
+          setAgreement(foundAgreement);
+          document.title = `Agreement | PactPal`;
+          
+          // Log successful access if user is logged in
+          if (user) {
+            logAccessAttempt({
+              userId: user.id,
+              userName: user.name,
+              action: 'view',
+              agreementId: id,
+              timestamp: new Date().toISOString(),
+              success: true,
+              details: isAdmin ? 'Admin access' : undefined,
+            });
           }
         } else {
           console.log('Agreement not found with ID:', id);
