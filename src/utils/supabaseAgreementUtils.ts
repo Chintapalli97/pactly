@@ -47,6 +47,12 @@ export async function createAgreementInSupabase(agreement: Agreement): Promise<s
     // Convert the agreement to the DB format with required fields
     const dbAgreement = mapAgreementToDBFormat(agreement);
     
+    // Make sure required fields are present
+    if (!dbAgreement.message) {
+      console.error('Agreement message is required');
+      throw new Error('Agreement message is required');
+    }
+    
     const { data, error } = await supabase
       .from('agreements')
       .insert(dbAgreement)
@@ -55,14 +61,19 @@ export async function createAgreementInSupabase(agreement: Agreement): Promise<s
     
     if (error) {
       console.error('Error creating agreement in Supabase:', error);
-      return null;
+      throw error;
+    }
+    
+    if (!data) {
+      console.error('No data returned from agreement creation');
+      throw new Error('No data returned from agreement creation');
     }
     
     console.log('Successfully created agreement in Supabase:', data);
     return data.id;
   } catch (error) {
     console.error('Error creating agreement in Supabase:', error);
-    return null;
+    throw error;
   }
 }
 

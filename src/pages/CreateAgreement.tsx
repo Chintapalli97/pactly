@@ -1,26 +1,21 @@
 
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAgreements } from '@/hooks/useAgreementsContext';
+import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import Layout from '@/components/Layout';
 import { Link, PencilIcon, Send, ArrowLeft } from 'lucide-react';
 import { toast } from '@/lib/toast';
-import { 
-  getAgreementById as getAgreementByIdUtil, 
-  ensureAgreementInStorage,
-  verifyAgreementExists
-} from '@/utils/agreementStorage';
+import { verifyAgreementExists } from '@/utils/agreementStorage';
+import { useAgreementCreation } from '@/hooks/useAgreementCreation';
 
 const CreateAgreement = () => {
   const [message, setMessage] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [agreementId, setAgreementId] = useState<string | null>(null);
-  const [shareLink, setShareLink] = useState('');
-  const { createAgreement, getAgreementById } = useAgreements();
+  const { createAgreement, loading, error, agreementId, shareLink, clearState } = useAgreementCreation();
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -29,53 +24,39 @@ const CreateAgreement = () => {
       return;
     }
     
+    if (!user) {
+      toast.error('You must be logged in to create an agreement');
+      return;
+    }
+    
     try {
-      setIsSubmitting(true);
       const id = await createAgreement(message);
       
-      // Double check that the agreement was created and exists
+      if (!id) {
+        throw new Error('Failed to create agreement');
+      }
+      
+      // Verify that the agreement was created and exists
       if (!verifyAgreementExists(id)) {
-        throw new Error('Agreement creation failed: Agreement not found after creation');
+        console.warn('Agreement creation succeeded but agreement not found in storage');
       }
-      
-      // Verify that the agreement was created
-      const createdAgreement = getAgreementById(id);
-      if (!createdAgreement) {
-        const storedAgreement = getAgreementByIdUtil(id);
-        if (!storedAgreement) {
-          throw new Error('Agreement creation failed: Agreement not found in storage');
-        }
-        
-        // Ensure the agreement is in the context if found in storage
-        ensureAgreementInStorage(storedAgreement);
-      }
-      
-      setAgreementId(id);
-      
-      // Always generate production URL for sharing
-      const productionUrl = 'https://playful-pact-pal.vercel.app';
-      const url = `${productionUrl}/agreements/${id}`;
-      setShareLink(url);
       
       // Trigger a storage event to ensure other components update
       const event = new Event('agreementsUpdated');
       document.dispatchEvent(event);
       
-      console.log(`Agreement created successfully with ID: ${id}`);
-      console.log(`Share link: ${url}`);
-      
     } catch (error) {
       console.error("Error in handleSubmit:", error);
       toast.error(error instanceof Error ? error.message : 'Failed to create agreement');
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
   const copyToClipboard = () => {
     try {
-      navigator.clipboard.writeText(shareLink);
-      toast.success('Link copied to clipboard');
+      if (shareLink) {
+        navigator.clipboard.writeText(shareLink);
+        toast.success('Link copied to clipboard');
+      }
     } catch (error) {
       console.error('Failed to copy link:', error);
       toast.error('Failed to copy link to clipboard');
@@ -86,6 +67,11 @@ const CreateAgreement = () => {
     if (agreementId) {
       navigate(`/agreements/${agreementId}`);
     }
+  };
+
+  const handleCreateAnother = () => {
+    setMessage('');
+    clearState();
   };
 
   return (
@@ -133,11 +119,15 @@ const CreateAgreement = () => {
               <Button 
                 type="submit" 
                 className="w-full" 
-                disabled={isSubmitting || !message.trim()}
+                disabled={loading || !message.trim()}
               >
                 <Send className="h-4 w-4 mr-2" />
-                {isSubmitting ? 'Creating...' : 'Create Agreement'}
+                {loading ? 'Creating...' : 'Create Agreement'}
               </Button>
+              
+              {error && (
+                <p className="text-sm text-destructive">{error}</p>
+              )}
             </form>
           </Card>
         ) : (
@@ -149,19 +139,21 @@ const CreateAgreement = () => {
               </p>
             </div>
             
-            <div className="flex items-center gap-2 mb-6">
-              <div className="bg-muted rounded-md p-3 flex-1 text-sm break-all">
-                {shareLink}
+            {shareLink && (
+              <div className="flex items-center gap-2 mb-6">
+                <div className="bg-muted rounded-md p-3 flex-1 text-sm break-all">
+                  {shareLink}
+                </div>
+                <Button 
+                  variant="outline"
+                  onClick={copyToClipboard}
+                  className="flex-shrink-0"
+                >
+                  <Link className="h-4 w-4 mr-1" />
+                  Copy Link
+                </Button>
               </div>
-              <Button 
-                variant="outline"
-                onClick={copyToClipboard}
-                className="flex-shrink-0"
-              >
-                <Link className="h-4 w-4 mr-1" />
-                Copy Link
-              </Button>
-            </div>
+            )}
             
             <div className="space-y-3">
               <Button 
@@ -175,11 +167,7 @@ const CreateAgreement = () => {
               <Button 
                 variant="outline" 
                 className="w-full" 
-                onClick={() => {
-                  setAgreementId(null);
-                  setMessage('');
-                  setShareLink('');
-                }}
+                onClick={handleCreateAnother}
               >
                 Create Another Agreement
               </Button>

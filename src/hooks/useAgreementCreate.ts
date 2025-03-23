@@ -10,7 +10,7 @@ import {
   getStoredAgreements
 } from '@/utils/agreementUtils';
 import { createAgreementInSupabase } from '@/utils/supabaseAgreementUtils';
-import supabase from '@/utils/supabase';
+import { useAgreementCreation } from './useAgreementCreation';
 
 export const useAgreementCreate = (
   agreements: Agreement[],
@@ -20,6 +20,7 @@ export const useAgreementCreate = (
   const { user } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [lastCreatedId, setLastCreatedId] = useState<string | null>(null);
+  const { createAgreement: createAgreementInSupabaseDirectly } = useAgreementCreation();
 
   const createAgreement = async (message: string): Promise<string> => {
     if (!user) throw new Error('You must be logged in to create an agreement');
@@ -28,12 +29,21 @@ export const useAgreementCreate = (
     setIsSubmitting(true);
     
     try {
-      // Generate a unique ID for the agreement
-      const uniqueId = crypto.randomUUID();
-      console.log(`Generated unique ID for new agreement: ${uniqueId}`);
+      // First try to create the agreement directly in Supabase
+      const agreementId = await createAgreementInSupabaseDirectly(message);
       
+      if (!agreementId) {
+        throw new Error("Failed to create agreement in Supabase");
+      }
+      
+      console.log(`Agreement successfully created with ID: ${agreementId}`);
+      
+      // Get the latest agreements from storage to avoid race conditions
+      const latestAgreements = getStoredAgreements();
+      
+      // Create a local Agreement object with the same ID
       const newAgreement: Agreement = {
-        id: uniqueId,
+        id: agreementId,
         message,
         createdAt: new Date().toISOString(),
         creatorId: user.id,
@@ -41,25 +51,6 @@ export const useAgreementCreate = (
         status: 'pending',
         deleteRequestedBy: []
       };
-      
-      // First save to Supabase
-      const supabaseId = await createAgreementInSupabase(newAgreement);
-      
-      // If Supabase save failed, throw an error
-      if (!supabaseId) {
-        throw new Error("Failed to save agreement to Supabase");
-      }
-      
-      console.log(`Agreement successfully saved to Supabase with ID: ${supabaseId}`);
-      
-      // If Supabase returned a different ID, update our agreement
-      if (supabaseId !== uniqueId) {
-        console.log(`Supabase assigned a different ID: ${supabaseId}, updating local agreement`);
-        newAgreement.id = supabaseId;
-      }
-      
-      // Get the latest agreements from storage to avoid race conditions
-      const latestAgreements = getStoredAgreements();
       
       // Check if this ID is somehow already in use
       if (latestAgreements.some(a => a.id === newAgreement.id)) {
@@ -76,31 +67,9 @@ export const useAgreementCreate = (
       setAgreements(updatedAgreements);
       setLastCreatedId(newAgreement.id);
       
-      // Log successful creation
-      logAccessAttempt({
-        userId: user.id,
-        userName: user.name,
-        action: 'create',
-        agreementId: newAgreement.id,
-        timestamp: new Date().toISOString(),
-        success: true,
-      });
-      
       toast.success('Agreement created!');
       return newAgreement.id;
     } catch (error: any) {
-      // Log failed attempt
-      if (user) {
-        logAccessAttempt({
-          userId: user.id,
-          userName: user.name,
-          action: 'create',
-          timestamp: new Date().toISOString(),
-          success: false,
-          error: error.message,
-        });
-      }
-      
       console.error("Agreement creation failed:", error);
       toast.error(error.message || 'Failed to create agreement');
       throw error;

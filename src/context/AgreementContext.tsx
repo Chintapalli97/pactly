@@ -1,4 +1,3 @@
-
 import React, { createContext } from 'react';
 import { useAuth } from './AuthContext';
 import { Agreement } from '@/types/agreement';
