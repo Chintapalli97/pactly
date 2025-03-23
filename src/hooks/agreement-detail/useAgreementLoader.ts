@@ -31,19 +31,7 @@ export const useAgreementLoader = (id: string | undefined) => {
 
     try {
       // First try from context
-      let foundAgreement = getAgreementById(id);
-      
-      // If not found in context, try directly from localStorage
-      if (!foundAgreement) {
-        console.log('Agreement not found in context, trying localStorage...');
-        foundAgreement = getAgreementByIdUtil(id);
-      }
-
-      // If still not found, try from Supabase
-      if (!foundAgreement) {
-        console.log('Agreement not found in localStorage, trying Supabase...');
-        foundAgreement = await fetchAgreementById(id);
-      }
+      let foundAgreement = await getAgreementById(id);
       
       if (foundAgreement) {
         console.log('Agreement found:', foundAgreement);

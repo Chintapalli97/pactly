@@ -20,7 +20,7 @@ export const useAgreementActions = (agreement: Agreement | null, setAgreement: R
       await respondToAgreement(agreement.id, accept);
       
       // Update the local agreement state after response
-      const updatedAgreement = getAgreementById(agreement.id);
+      const updatedAgreement = await getAgreementById(agreement.id);
       if (updatedAgreement) {
         setAgreement(updatedAgreement);
         
@@ -49,7 +49,7 @@ export const useAgreementActions = (agreement: Agreement | null, setAgreement: R
       } else {
         await requestDeleteAgreement(agreement.id);
         // Update the local agreement state after delete request
-        const updatedAgreement = getAgreementById(agreement.id);
+        const updatedAgreement = await getAgreementById(agreement.id);
         if (updatedAgreement) {
           setAgreement(updatedAgreement);
           

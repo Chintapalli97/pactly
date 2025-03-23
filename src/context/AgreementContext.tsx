@@ -16,7 +16,7 @@ type AgreementContextType = {
   respondToAgreement: (id: string, accept: boolean) => Promise<void>;
   requestDeleteAgreement: (id: string) => Promise<void>;
   adminDeleteAgreement: (id: string) => Promise<void>; // Admin-only function
-  getAgreementById: (id: string) => Agreement | undefined;
+  getAgreementById: (id: string) => Promise<Agreement | undefined>;
   hasNewNotifications: boolean;
   clearNotifications: () => void;
   hasAccess: (agreementId: string) => boolean;
@@ -59,7 +59,8 @@ export const AgreementProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     // Regular users only have access to agreements they created or were invited to
     if (!user) return false;
     
-    const agreement = getAgreementById(agreementId);
+    // Find the agreement in the loaded agreements state
+    const agreement = agreements.find(a => a.id === agreementId);
     if (!agreement) return false;
 
     // User has access if they created the agreement or are the recipient
