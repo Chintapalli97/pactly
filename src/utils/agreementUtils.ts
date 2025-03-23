@@ -1,3 +1,4 @@
+
 // Re-export everything from the refactored utility files
 export * from './constants';
 export * from './agreementStorage';
@@ -20,6 +21,8 @@ export type { AccessLogEntry } from './accessLogUtils';
 // Function to clear all agreements (admin only)
 export const clearAllAgreements = (): void => {
   try {
+    // Import the constant explicitly to avoid the error
+    import { AGREEMENTS_KEY } from './constants';
     localStorage.setItem(AGREEMENTS_KEY, JSON.stringify([]));
     console.log('All agreements cleared');
     
@@ -34,7 +37,11 @@ export const clearAllAgreements = (): void => {
 // Function to restore a deleted agreement (admin only)
 export const restoreAgreement = (agreementId: string): boolean => {
   try {
-    const agreements = getAgreementsFromStorage();
+    // Import the needed functions and constants
+    import { AGREEMENTS_KEY } from './constants';
+    import { getStoredAgreements } from './agreementStorage';
+    
+    const agreements = getStoredAgreements();
     const agreementIndex = agreements.findIndex(agreement => agreement.id === agreementId);
     
     if (agreementIndex === -1) {

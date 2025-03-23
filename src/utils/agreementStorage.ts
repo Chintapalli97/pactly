@@ -1,7 +1,7 @@
 
 import { Agreement } from '@/types/agreement';
 import { toast } from '@/lib/toast';
-import { AGREEMENTS_STORAGE_KEY } from './constants';
+import { AGREEMENTS_KEY, AGREEMENTS_STORAGE_KEY } from './constants';
 
 export const getStoredAgreements = (): Agreement[] => {
   try {
