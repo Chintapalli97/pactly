@@ -1,8 +1,8 @@
 
-import supabase from './supabase';
+import { supabase } from '@/integrations/supabase/client';
 import { Agreement, AgreementDB, mapDBAgreementToAgreement, mapAgreementToDBFormat } from '@/types/agreement';
 import { ensureAgreementInStorage } from './agreementStorage';
-import { simulateApiDelay } from './agreementUtils';
+import { simulateApiDelay } from './constants';
 
 // Fetch agreement by ID from Supabase
 export async function fetchAgreementById(id: string): Promise<Agreement | null> {
