@@ -9,6 +9,7 @@ import {
   ensureAgreementInStorage
 } from '@/utils/agreementUtils';
 import { fetchAgreementById } from '@/utils/supabaseAgreementUtils';
+import { supabase } from '@/integrations/supabase/client';
 
 export const useAgreementLoader = (id: string | undefined) => {
   const { user } = useAuth();
@@ -30,8 +31,43 @@ export const useAgreementLoader = (id: string | undefined) => {
     setLocalLoading(true);
 
     try {
-      // First try from context
-      let foundAgreement = await getAgreementById(id);
+      // Try to find agreement in context first
+      let foundAgreement = getAgreementById(id);
+      
+      // If not found in context, try to fetch from Supabase directly
+      if (!foundAgreement) {
+        console.log("Agreement not found in context, trying to fetch from Supabase directly");
+        
+        const { data, error } = await supabase
+          .from('agreements')
+          .select('*')
+          .eq('id', id)
+          .eq('is_deleted', false)
+          .single();
+          
+        if (error) {
+          console.error("Error fetching agreement from Supabase:", error);
+        } else if (data) {
+          console.log("Agreement found in Supabase:", data);
+          
+          // Convert from database format to application format
+          foundAgreement = {
+            id: data.id,
+            message: data.message,
+            createdAt: data.created_at,
+            creatorId: data.creator_id || '',
+            creatorName: data.creator_name || 'Anonymous',
+            recipientId: data.recipient_id || undefined,
+            recipientName: data.recipient_name || undefined,
+            status: data.status as any,
+            deleteRequestedBy: data.delete_requested_by || [],
+            isDeleted: data.is_deleted
+          };
+          
+          // Ensure it's in local storage
+          ensureAgreementInStorage(foundAgreement);
+        }
+      }
       
       if (foundAgreement) {
         console.log('Agreement found:', foundAgreement);
@@ -41,9 +77,9 @@ export const useAgreementLoader = (id: string | undefined) => {
         setAgreement(foundAgreement);
         document.title = `Agreement | PactPal`;
         
-        // If found in Supabase but not in localStorage, add it to the context
+        // If found but not in localStorage, add it to the context
         if (!getAgreementByIdUtil(id)) {
-          console.log('Agreement found in Supabase but not in localStorage, ensuring it is in storage');
+          console.log('Agreement found but not in localStorage, ensuring it is in storage');
           ensureAgreementInStorage(foundAgreement);
           
           // Trigger a storage event to refresh the agreements in other tabs
@@ -87,7 +123,7 @@ export const useAgreementLoader = (id: string | undefined) => {
       window.removeEventListener('storage', handleStorageChange);
       document.removeEventListener('agreementsUpdated', handleCustomEvent);
     };
-  }, [id, getAgreementById, user]);
+  }, [id, user]);
 
   return {
     agreement,

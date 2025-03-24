@@ -31,6 +31,7 @@ export const useCreateAgreementPage = () => {
         
         if (error) {
           console.error('Error checking auth status:', error);
+          throw error;
         }
         
         console.log('Auth check completed:', data.session ? 'Authenticated' : 'Not authenticated');
@@ -39,9 +40,12 @@ export const useCreateAgreementPage = () => {
           console.log('No active session and no user, redirecting to login');
           toast.error('You must be logged in to create an agreement');
           navigate('/login');
+          return;
         }
       } catch (err) {
         console.error('Error during auth check:', err);
+        toast.error('Authentication error. Please try logging in again.');
+        navigate('/login');
       } finally {
         setIsCheckingAuth(false);
       }
@@ -54,19 +58,24 @@ export const useCreateAgreementPage = () => {
     e.preventDefault();
     
     if (!message.trim()) {
-      return;
-    }
-    
-    // Double-check authentication before proceeding
-    const { data: sessionData } = await supabase.auth.getSession();
-    
-    if (!user && !sessionData.session) {
-      toast.error('You must be logged in to create an agreement');
-      navigate('/login');
+      toast.error('Please enter a message for your agreement');
       return;
     }
     
     try {
+      // Double-check authentication before proceeding
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError) {
+        throw new Error('Authentication error. Please try logging in again.');
+      }
+      
+      if (!sessionData.session) {
+        toast.error('You must be logged in to create an agreement');
+        navigate('/login');
+        return;
+      }
+      
       const id = await createAgreement(message);
       
       if (!id) {

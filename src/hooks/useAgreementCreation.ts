@@ -35,8 +35,13 @@ export const useAgreementCreation = () => {
       // Get the current user
       const { data: userData, error: userError } = await supabase.auth.getUser();
       
-      if (userError || !userData.user) {
-        console.error('Authentication error:', userError);
+      if (userError) {
+        console.error('User retrieval error:', userError);
+        throw new Error('Failed to get user information');
+      }
+      
+      if (!userData.user) {
+        console.error('No user found');
         throw new Error('You must be logged in to create an agreement');
       }
 
@@ -73,9 +78,9 @@ export const useAgreementCreation = () => {
       const newAgreementId = data.id;
       setAgreementId(newAgreementId);
       
-      // Always generate production URL for sharing
-      const productionUrl = 'https://playful-pact-pal.vercel.app';
-      const link = `${productionUrl}/agreements/${newAgreementId}`;
+      // Generate URL for sharing - use current origin to work across environments
+      const origin = window.location.origin;
+      const link = `${origin}/agreements/${newAgreementId}`;
       setShareLink(link);
       
       console.log(`Agreement created successfully with ID: ${newAgreementId}`);
@@ -101,7 +106,7 @@ export const useAgreementCreation = () => {
       // Log failed attempt if we have user data
       try {
         const { data } = await supabase.auth.getUser();
-        if (data.user) {
+        if (data && data.user) {
           logAccessAttempt({
             userId: data.user.id,
             userName: data.user.user_metadata?.name || 'Unknown',
