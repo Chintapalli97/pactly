@@ -104,7 +104,7 @@ export const useAgreementLoader = (id: string | undefined) => {
     
     // Listen for storage events to reload agreement if it changes in another tab
     const handleStorageChange = (event: StorageEvent) => {
-      if (event.key === 'pact_pal_agreements') {
+      if (event.key === 'friendly_agreements') {
         console.log("Storage event detected, reloading agreement");
         loadAgreement();
       }
