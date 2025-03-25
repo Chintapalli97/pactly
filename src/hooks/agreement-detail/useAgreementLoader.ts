@@ -8,7 +8,6 @@ import {
   getAgreementById as getAgreementByIdUtil,
   ensureAgreementInStorage
 } from '@/utils/agreementUtils';
-import { fetchAgreementById } from '@/utils/supabaseAgreementUtils';
 import { supabase } from '@/integrations/supabase/client';
 
 export const useAgreementLoader = (id: string | undefined) => {
