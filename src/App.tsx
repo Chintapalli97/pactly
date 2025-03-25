@@ -16,6 +16,9 @@ import Notifications from './pages/Notifications';
 import NotFound from './pages/NotFound';
 
 function App() {
+  // Update the document title for the entire app
+  document.title = "Friendly Agreements";
+  
   return (
     <AuthProvider>
       <AgreementProvider>

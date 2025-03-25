@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useAgreements } from '@/hooks/useAgreementsContext';
-import { Agreement } from '@/types/agreement';
+import { Agreement, AgreementDB, mapDBAgreementToAgreement } from '@/types/agreement';
 import { toast } from '@/lib/toast';
 import { 
   getAgreementById as getAgreementByIdUtil,
@@ -75,7 +75,7 @@ export const useAgreementLoader = (id: string | undefined) => {
         // For pending agreements, anyone can view them (even not logged in users)
         // Also allow viewing of any accepted agreement without login requirement
         setAgreement(foundAgreement);
-        document.title = `Agreement | PactPal`;
+        document.title = `Agreement | Friendly Agreements`;
         
         // If found but not in localStorage, add it to the context
         if (!getAgreementByIdUtil(id)) {
